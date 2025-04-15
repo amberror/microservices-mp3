@@ -1,6 +1,5 @@
 package example.config;
 
-import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,10 +23,6 @@ public class AppConfig implements WebMvcConfigurer {
 	@Override
 	public void addFormatters(FormatterRegistry registry) {
 		customConverters.forEach(registry::addConverter);
-		/*
-		registry.addConverter(new EntityToResponseDTOConverter());
-		registry.addConverter(new RequestDTOToEntityConverter());
-		*/
 	}
 
 	@Bean
@@ -38,10 +33,5 @@ public class AppConfig implements WebMvcConfigurer {
 	@Bean
 	public RestTemplate resourceRestTemplate() {
 		return new RestTemplate();
-	}
-
-	@Bean
-	public Tika tika() {
-		return new Tika();
 	}
 }

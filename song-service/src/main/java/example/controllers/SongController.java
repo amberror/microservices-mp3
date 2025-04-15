@@ -5,9 +5,6 @@ import example.dto.SongResponseDTO;
 import example.services.SongService;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Positive;
-import org.hibernate.validator.constraints.Length;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -20,23 +17,25 @@ import java.util.Map;
 @RequestMapping("/songs")
 @Validated
 public class SongController {
+	private static final String ID = "id";
+	private static final String IDS = "ids";
 
 	@Resource
 	private SongService songService;
 
 	@GetMapping("/{id}")
-	public ResponseEntity<SongResponseDTO> getSong(@PathVariable(name = "id") @Min(1) @Positive Long id) {
+	public ResponseEntity<SongResponseDTO> getSong(@PathVariable(name = ID) Long id) {
 		return ResponseEntity.ok(songService.getSong(id));
 	}
 
 	@PostMapping
 	public ResponseEntity<Map<String, Long>> saveSong(@RequestBody @Valid SongRequestDTO dto) {
-		return ResponseEntity.ok(Map.of("id", songService.saveSong(dto)));
+		return ResponseEntity.ok(Map.of(ID, songService.saveSong(dto)));
 	}
 
 	@DeleteMapping
-	public ResponseEntity<Map<String, List<Long>>> deleteSongs(@RequestParam(name = "id", required = false) @Length(max = 200) String ids) {
-		return ResponseEntity.ok(Map.of("ids", songService.deleteSongs(ids)));
+	public ResponseEntity<Map<String, List<Long>>> deleteSongs(@RequestParam(name = ID, required = false) String ids) {
+		return ResponseEntity.ok(Map.of(IDS, songService.deleteSongs(ids)));
 	}
 
 }

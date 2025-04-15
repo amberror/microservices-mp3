@@ -5,14 +5,17 @@ import example.dto.ResourceBatchDTO;
 import example.dto.ResourceDTO;
 import example.dto.SongRequestDTO;
 import example.entities.ResourceEntity;
+import example.exceptions.InvalidArgumentException;
 import example.models.FileMetadataModel;
 import example.repositories.ResourceRepository;
+import example.services.ConstraintsService;
 import example.services.FileMetadataService;
 import example.services.ResourceService;
 import example.services.SongIntegrationService;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -36,17 +39,22 @@ public class ResourceServiceImpl implements ResourceService {
 	@Resource
 	private FileMetadataService fileMetadataService;
 
+	@Resource
+	private ConstraintsService constraintsService;
+
 	@Override
 	public ResourceDTO getFile(Long id) {
+		constraintsService.checkIdConstraints(id);
 		ResourceEntity entity = resourceRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException("Resource with id " + id + " doest not exist"));
+				.orElseThrow(() -> new EntityNotFoundException(String.format(ResourceConstants.RESOURCE_NOT_FOUND_MESSAGE_TEMPLATE, id)));
 		return conversionService.convert(entity, ResourceDTO.class);
 	}
 
 	@Override
 	public boolean checkExist(Long id) {
+		constraintsService.checkIdConstraints(id);
 		if(!resourceRepository.existsById(id)) {
-			throw new EntityNotFoundException("Resource with id " + id + " does not exist");
+			throw new EntityNotFoundException(String.format(ResourceConstants.RESOURCE_NOT_FOUND_MESSAGE_TEMPLATE, id));
 		}
 		return true;
 	}
@@ -70,8 +78,8 @@ public class ResourceServiceImpl implements ResourceService {
 	@Override
 	@Transactional
 	public ResourceBatchDTO deleteFiles(String ids) {
-		List<Long> existedIds = ids != null && !ids.isBlank() ?
-				this.parseStringCommaSeparated(ids, "ID should be valid integer value") :
+		List<Long> existedIds = !StringUtils.isBlank(ids) ?
+				this.parseStringCommaSeparated(ids) :
 				List.of();
 		resourceRepository.deleteAllById(existedIds);
 		ResourceBatchDTO dto = ResourceBatchDTO.builder().ids(existedIds).build();
@@ -82,9 +90,10 @@ public class ResourceServiceImpl implements ResourceService {
 	}
 
 
-	private List<Long> parseStringCommaSeparated(String value, String errorMessage) {
+	private List<Long> parseStringCommaSeparated(String value) {
+		constraintsService.checkInlineStringIdsConstraints(value);
 		return Arrays.stream(value.split(ResourceConstants.COMMA_SEPARATOR))
-				.map(id -> this.mapStringToLong(id, errorMessage))
+				.map(id -> this.mapStringToLong(id, String.format(ResourceConstants.INVALID_ID_FORMAT_MESSAGE_TEMPLATE, id)))
 				.filter(id -> resourceRepository.existsById(id))
 				.toList();
 	}
@@ -93,8 +102,9 @@ public class ResourceServiceImpl implements ResourceService {
 		Long result;
 		try {
 			result = Long.parseLong(value);
-		} catch (Exception e) {
-			throw new IllegalArgumentException(errorMessage);
+			constraintsService.checkIdConstraints(result);
+		} catch (NumberFormatException e) {
+			throw new InvalidArgumentException(errorMessage);
 		}
 		return result;
 	}

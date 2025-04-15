@@ -9,23 +9,22 @@ import org.hibernate.validator.constraints.Length;
 @Data
 @Builder
 public class SongRequestDTO {
-	@NotNull
-	@Positive
-	@Min(1)
+	@NotNull(message = "Song ID is required")
+	@Min(value = 1, message = "Must be a positive integer")
 	private Long id;
-	@NotNull
+	@NotNull(message = "Song name is required")
 	@Length(min = 1, max = 100)
 	private String name;
-	@NotNull
+	@NotNull(message = "Song artist is required")
 	@Length(min = 1, max = 100)
 	private String artist;
-	@NotNull
+	@NotNull(message = "Song album is required")
 	@Length(min = 1, max = 100)
 	private String album;
-	@NotNull
-	@Pattern(regexp = "^(\\d{2}:(?:[0-5]\\d)|Unknown)$", message = "Duration must be in the format mm:ss, with leading zeros")
+	@NotNull(message = "Song duration is required")
+	@Pattern(regexp = "^(\\d{2}:(?:[0-5]\\d)|Unknown)$", message = "Duration must be in mm:ss format with leading zeros")
 	private String duration;
-	@NotNull
-	@Pattern(regexp = "^(19\\d{2}|20\\d{2})$", message = "Year must be value from 1900 to 2099")
+	@NotNull(message = "Song year is required")
+	@Pattern(regexp = "^(19\\d{2}|20\\d{2})$", message = "Year must be between 1900 and 2099")
 	private String year;
 }

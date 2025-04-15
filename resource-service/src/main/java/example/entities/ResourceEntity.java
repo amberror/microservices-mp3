@@ -18,6 +18,6 @@ public class ResourceEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
-	@NotNull(message = "File data can not be null")
+	@NotNull(message = "File data is required")
 	private byte[] data;
 }

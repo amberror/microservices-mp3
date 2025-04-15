@@ -1,8 +1,6 @@
 package example.entities;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -17,19 +15,19 @@ import lombok.*;
 public class SongEntity {
 	@Id
 	private Long id;
-	@NotNull
+	@NotNull(message = "Song name is required")
 	@Size(min = 1, max = 100)
 	private String name;
-	@NotNull
+	@NotNull(message = "Song artist is required")
 	@Size(min = 1, max = 100)
 	private String artist;
-	@NotNull
+	@NotNull(message = "Song album is required")
 	@Size(min = 1, max = 100)
 	private String album;
-	@NotNull
-	@Pattern(regexp = "^(\\d{2}:(?:[0-5]\\d)|Unknown)$", message = "Duration must be in the format mm:ss, with leading zeros")
+	@NotNull(message = "Song duration is required")
+	@Pattern(regexp = "^(\\d{2}:(?:[0-5]\\d)|Unknown)$", message = "Duration must be in mm:ss format with leading zeros")
 	private String duration;
-	@NotNull
+	@NotNull(message = "Song year is required")
 	@Min(value = 1900, message = "Year must not be less than 1900")
 	@Max(value = 2099, message = "Year must not be greater than 2099")
 	private Integer year;

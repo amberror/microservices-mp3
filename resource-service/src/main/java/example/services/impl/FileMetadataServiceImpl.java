@@ -4,32 +4,16 @@ import example.constants.ResourceConstants;
 import example.enums.FileMetadata;
 import example.models.FileMetadataModel;
 import example.services.FileMetadataService;
-import jakarta.annotation.Resource;
 import org.apache.tika.Tika;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.AutoDetectParser;
-import org.apache.tika.parser.ParseContext;
-import org.apache.tika.sax.BodyContentHandler;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.util.*;
 
 
 @Service
 public class FileMetadataServiceImpl implements FileMetadataService {
-
-	/*@Resource
-	private AutoDetectParser autoDetectParser;
-
-	@Resource
-	private BodyContentHandler bodyContentHandler;
-
-	@Resource
-	private ParseContext parseContext;*/
-
 
 	@Override
 	public Optional<FileMetadataModel> getFileMetadata(byte[] fileBytes) {
@@ -64,7 +48,7 @@ public class FileMetadataServiceImpl implements FileMetadataService {
 			double duration = Double.parseDouble(durationInMilliseconds);
 			long minutes = (long) duration / 60;
 			long seconds = (long) duration % 60;
-			return String.format("%02d:%02d", minutes, seconds);
+			return String.format(ResourceConstants.MM_SS_TEMPLATE, minutes, seconds);
 		} catch (NumberFormatException e) {
 			return ResourceConstants.UNKNOWN;
 		}
