@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS resource_entity (
+    id SERIAL PRIMARY KEY,
+    data BYTEA NOT NULL
+);

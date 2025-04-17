@@ -1,20 +1,58 @@
 services:
   resource-db:
-    image: postgres:17-alpine
+    image: postgres:17-alpine3.21
+    container_name: resource-db
     environment:
+      POSTGRES_USER: ${RESOURCE_DB_USERNAME}
+      POSTGRES_PASSWORD: ${RESOURCE_DB_PASSWORD}
       POSTGRES_DB: resource-db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./init-scripts/resource-db:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
 
   song-db:
-    image: postgres:17-alpine
+    image: postgres:17-alpine3.21
+    container_name: song-db
     environment:
+      POSTGRES_USER: ${SONG_DB_USERNAME}
+      POSTGRES_PASSWORD: ${SONG_DB_PASSWORD}
       POSTGRES_DB: song-db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./init-scripts/song-db:/docker-entrypoint-initdb.d
     ports:
       - "5433:5432"
 
+  resource-service:
+    container_name: resource-service
+    build:
+      context: ./resource-service
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: ${RESOURCE_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${RESOURCE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${RESOURCE_DB_PASSWORD}
+      SONG_INTEGRATION_BASE_URL: ${SONG_INTEGRATION_BASE_URL}
+      SONG_INTEGRATION_GET_URL: ${SONG_INTEGRATION_GET_URL}
+      SONG_INTEGRATION_POST_EXIST_URL: ${SONG_INTEGRATION_POST_EXIST_URL}
+      SONG_INTEGRATION_DELETE_EXIST_URL: ${SONG_INTEGRATION_DELETE_EXIST_URL}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - resource-db
 
+  song-service:
+    container_name: song-service
+    build:
+      context: ./song-service
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: ${SONG_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${SONG_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SONG_DB_PASSWORD}
+      RESOURCE_INTEGRATION_BASE_URL: ${RESOURCE_INTEGRATION_BASE_URL}
+      RESOURCE_INTEGRATION_GET_EXIST_URL: ${RESOURCE_INTEGRATION_GET_EXIST_URL}
+    ports:
+      - "8082:8082"
+    depends_on:
+    - song-db
