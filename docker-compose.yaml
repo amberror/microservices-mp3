@@ -32,17 +32,14 @@ services:
       SPRING_DATASOURCE_URL: ${RESOURCE_DB_URL}
       SPRING_DATASOURCE_USERNAME: ${RESOURCE_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${RESOURCE_DB_PASSWORD}
-      SONG_INTEGRATION_BASE_URL: ${SONG_INTEGRATION_BASE_URL}
-      SONG_INTEGRATION_GET_URL: ${SONG_INTEGRATION_GET_URL}
-      SONG_INTEGRATION_POST_EXIST_URL: ${SONG_INTEGRATION_POST_EXIST_URL}
-      SONG_INTEGRATION_DELETE_EXIST_URL: ${SONG_INTEGRATION_DELETE_EXIST_URL}
+      EUREKA_REGISTRATION_URL: ${EUREKA_REGISTRATION_URL}
     ports:
       - "8081:8081"
     depends_on:
       - resource-db
+      - service-registry
 
   song-service:
-    container_name: song-service
     build:
       context: ./song-service
       dockerfile: Dockerfile
@@ -50,9 +47,17 @@ services:
       SPRING_DATASOURCE_URL: ${SONG_DB_URL}
       SPRING_DATASOURCE_USERNAME: ${SONG_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SONG_DB_PASSWORD}
-      RESOURCE_INTEGRATION_BASE_URL: ${RESOURCE_INTEGRATION_BASE_URL}
-      RESOURCE_INTEGRATION_GET_EXIST_URL: ${RESOURCE_INTEGRATION_GET_EXIST_URL}
+      EUREKA_REGISTRATION_URL: ${EUREKA_REGISTRATION_URL}
     ports:
-      - "8082:8082"
+      - ":8082"
     depends_on:
     - song-db
+    - service-registry
+
+  service-registry:
+    container_name: service-registry
+    build:
+      context: ./service-registry
+      dockerfile: Dockerfile
+    ports:
+      - "8761:8761"

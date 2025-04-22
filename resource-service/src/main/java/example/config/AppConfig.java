@@ -2,7 +2,6 @@ package example.config;
 
 import example.converters.EntityToDTOConverter;
 import example.converters.FileMetadataToSongRequestConverter;
-import org.apache.tika.Tika;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.BodyContentHandler;
@@ -10,7 +9,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -28,11 +26,6 @@ public class AppConfig implements WebMvcConfigurer {
 	@Bean
 	public MethodValidationPostProcessor methodValidationPostProcessor() {
 		return new MethodValidationPostProcessor();
-	}
-
-	@Bean
-	public RestTemplate songRestTemplate() {
-		return new RestTemplate();
 	}
 
 	@Bean

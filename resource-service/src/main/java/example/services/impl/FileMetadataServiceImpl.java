@@ -9,7 +9,7 @@ import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Optional;
 
 
 @Service
