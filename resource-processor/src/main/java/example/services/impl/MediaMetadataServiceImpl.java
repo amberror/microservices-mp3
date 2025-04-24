@@ -1,9 +1,9 @@
 package example.services.impl;
 
-import example.constants.ResourceConstants;
+import example.constants.ResourceProcessorConstants;
 import example.enums.FileMetadata;
 import example.models.FileMetadataModel;
-import example.services.FileMetadataService;
+import example.services.MediaMetadataService;
 import org.apache.tika.Tika;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
@@ -13,7 +13,7 @@ import java.util.Optional;
 
 
 @Service
-public class FileMetadataServiceImpl implements FileMetadataService {
+public class MediaMetadataServiceImpl implements MediaMetadataService {
 
 	@Override
 	public Optional<FileMetadataModel> getFileMetadata(byte[] fileBytes) {
@@ -40,7 +40,7 @@ public class FileMetadataServiceImpl implements FileMetadataService {
 	}
 
 	private String getMetadataProperty(Metadata metadata, String identifier) {
-		return Optional.ofNullable(metadata.get(identifier)).orElse(ResourceConstants.UNKNOWN);
+		return Optional.ofNullable(metadata.get(identifier)).orElse(ResourceProcessorConstants.UNKNOWN);
 	}
 
 	private String convertDurationToMMSS(String durationInMilliseconds) {
@@ -48,9 +48,9 @@ public class FileMetadataServiceImpl implements FileMetadataService {
 			double duration = Double.parseDouble(durationInMilliseconds);
 			long minutes = (long) duration / 60;
 			long seconds = (long) duration % 60;
-			return String.format(ResourceConstants.MM_SS_TEMPLATE, minutes, seconds);
+			return String.format(ResourceProcessorConstants.MM_SS_TEMPLATE, minutes, seconds);
 		} catch (NumberFormatException e) {
-			return ResourceConstants.UNKNOWN;
+			return ResourceProcessorConstants.UNKNOWN;
 		}
 	}
 }

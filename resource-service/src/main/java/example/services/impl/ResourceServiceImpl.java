@@ -3,22 +3,21 @@ package example.services.impl;
 import example.constants.ResourceConstants;
 import example.dto.ResourceBatchDTO;
 import example.dto.ResourceDTO;
-import example.dto.SongRequestDTO;
 import example.entities.ResourceEntity;
 import example.exceptions.InvalidArgumentException;
-import example.models.FileMetadataModel;
+import example.exceptions.ResourceSaveException;
 import example.repositories.ResourceRepository;
 import example.services.ConstraintsService;
-import example.services.FileMetadataService;
 import example.services.ResourceService;
+import example.services.S3Service;
 import example.services.SongIntegrationService;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -37,10 +36,13 @@ public class ResourceServiceImpl implements ResourceService {
 	private ConversionService conversionService;
 
 	@Resource
-	private FileMetadataService fileMetadataService;
+	private S3Service s3Service;
 
 	@Resource
 	private ConstraintsService constraintsService;
+
+	@Value("${resource.s3.bucket.name}")
+	private String resourceBucketName;
 
 	@Override
 	public ResourceDTO getFile(Long id) {
@@ -62,8 +64,11 @@ public class ResourceServiceImpl implements ResourceService {
 	@Override
 	@Transactional
 	public ResourceDTO saveFile(byte[] fileBytes) {
-		ResourceEntity entity = resourceRepository.save(ResourceEntity.builder().data(fileBytes).build());
-		FileMetadataModel fileMetadata = fileMetadataService.getFileMetadata(fileBytes)
+		String fileIdentifier = s3Service.uploadFile(resourceBucketName, fileBytes)
+				.orElseThrow(() -> new ResourceSaveException("Error occurred during resource save to s3 bucket " + resourceBucketName));
+		ResourceEntity entity = resourceRepository.save(ResourceEntity.builder().fileIdentifier(fileIdentifier).build());
+		//Temporary, migration to messaging queue preparation
+		/*FileMetadataModel fileMetadata = fileMetadataService.getFileMetadata(fileBytes)
 				.orElseThrow(() -> new IllegalArgumentException("Resource's metadata is not valid"));
 
 		SongRequestDTO requestDTO = conversionService.convert(fileMetadata, SongRequestDTO.class);
@@ -71,7 +76,7 @@ public class ResourceServiceImpl implements ResourceService {
 
 		if(!songIntegrationService.saveMetadata(requestDTO)) {
 			throw new RestClientException("Failed to save resource's metadata in song service");
-		}
+		}*/
 		return conversionService.convert(entity, ResourceDTO.class);
 	}
 
@@ -81,11 +86,14 @@ public class ResourceServiceImpl implements ResourceService {
 		List<Long> existedIds = !StringUtils.isBlank(ids) ?
 				this.parseStringCommaSeparated(ids) :
 				List.of();
+		resourceRepository.findAllById(existedIds)
+				.forEach(entity -> s3Service.deleteFile(resourceBucketName, entity.getFileIdentifier()));
 		resourceRepository.deleteAllById(existedIds);
 		ResourceBatchDTO dto = ResourceBatchDTO.builder().ids(existedIds).build();
-		if(!songIntegrationService.deleteMetadata(dto)) {
+		//Temporary, migration to messaging queue preparation
+		/*if(!songIntegrationService.deleteMetadata(dto)) {
 			throw new RestClientException("Failed to delete resource's metadata in song service");
-		}
+		}*/
 		return dto;
 	}
 

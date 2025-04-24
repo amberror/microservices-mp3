@@ -1,5 +1,6 @@
 package example.services.impl;
 
+import example.constants.ResourceConstants;
 import example.dto.ResourceBatchDTO;
 import example.dto.SongRequestDTO;
 import example.services.SongFeignClient;
@@ -28,7 +29,7 @@ public class SongIntegrationServiceImpl implements SongIntegrationService {
 	public boolean deleteMetadata(ResourceBatchDTO dto) {
 		String ids = dto.getIds().stream()
 				.map(String::valueOf)
-				.collect(Collectors.joining(","));
+				.collect(Collectors.joining(ResourceConstants.COMMA_SEPARATOR));
 		return client.deleteMetadata(ids, dto).getStatusCode().is2xxSuccessful();
 	}
 }

@@ -5,6 +5,6 @@ import example.models.FileMetadataModel;
 import java.util.Optional;
 
 
-public interface FileMetadataService {
+public interface MediaMetadataService {
 	Optional<FileMetadataModel> getFileMetadata(byte[] fileBytes);
 }

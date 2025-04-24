@@ -3,8 +3,7 @@ package example.constants;
 public class ResourceConstants {
 	public static final String AUDIO_MPEG = "audio/mpeg";
 	public static final String COMMA_SEPARATOR = ",";
-	public static final String UNKNOWN = "Unknown";
-	public static final String MM_SS_TEMPLATE = "%02d:%02d";
+	public static final String SHA_256 = "SHA-256";
 
 	//Exceptions
 	public static final String INVALID_ID_FORMAT_MESSAGE_TEMPLATE = "Invalid ID format: '%s'. Only positive integers are allowed";
