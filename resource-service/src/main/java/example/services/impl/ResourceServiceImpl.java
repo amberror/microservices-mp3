@@ -6,6 +6,7 @@ import example.dto.ResourceDTO;
 import example.entities.ResourceEntity;
 import example.exceptions.InvalidArgumentException;
 import example.exceptions.ResourceSaveException;
+import example.messaging.kafka.producers.ResourceProducer;
 import example.repositories.ResourceRepository;
 import example.services.ConstraintsService;
 import example.services.ResourceService;
@@ -18,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -40,6 +42,9 @@ public class ResourceServiceImpl implements ResourceService {
 
 	@Resource
 	private ConstraintsService constraintsService;
+
+	@Resource
+	private ResourceProducer resourceProducer;
 
 	@Value("${resource.s3.bucket.name}")
 	private String resourceBucketName;
@@ -67,16 +72,7 @@ public class ResourceServiceImpl implements ResourceService {
 		String fileIdentifier = s3Service.uploadFile(resourceBucketName, fileBytes)
 				.orElseThrow(() -> new ResourceSaveException("Error occurred during resource save to s3 bucket " + resourceBucketName));
 		ResourceEntity entity = resourceRepository.save(ResourceEntity.builder().fileIdentifier(fileIdentifier).build());
-		//Temporary, migration to messaging queue preparation
-		/*FileMetadataModel fileMetadata = fileMetadataService.getFileMetadata(fileBytes)
-				.orElseThrow(() -> new IllegalArgumentException("Resource's metadata is not valid"));
-
-		SongRequestDTO requestDTO = conversionService.convert(fileMetadata, SongRequestDTO.class);
-		requestDTO.setId(entity.getId());
-
-		if(!songIntegrationService.saveMetadata(requestDTO)) {
-			throw new RestClientException("Failed to save resource's metadata in song service");
-		}*/
+		resourceProducer.sendMessage(entity.getId());
 		return conversionService.convert(entity, ResourceDTO.class);
 	}
 
@@ -90,10 +86,9 @@ public class ResourceServiceImpl implements ResourceService {
 				.forEach(entity -> s3Service.deleteFile(resourceBucketName, entity.getFileIdentifier()));
 		resourceRepository.deleteAllById(existedIds);
 		ResourceBatchDTO dto = ResourceBatchDTO.builder().ids(existedIds).build();
-		//Temporary, migration to messaging queue preparation
-		/*if(!songIntegrationService.deleteMetadata(dto)) {
+		if(!songIntegrationService.deleteMetadata(dto)) {
 			throw new RestClientException("Failed to delete resource's metadata in song service");
-		}*/
+		}
 		return dto;
 	}
 

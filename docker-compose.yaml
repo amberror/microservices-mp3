@@ -1,7 +1,6 @@
 services:
   resource-db:
     image: postgres:17-alpine3.21
-    container_name: resource-db
     environment:
       POSTGRES_USER: ${RESOURCE_DB_USERNAME}
       POSTGRES_PASSWORD: ${RESOURCE_DB_PASSWORD}
@@ -13,7 +12,6 @@ services:
 
   song-db:
     image: postgres:17-alpine3.21
-    container_name: song-db
     environment:
       POSTGRES_USER: ${SONG_DB_USERNAME}
       POSTGRES_PASSWORD: ${SONG_DB_PASSWORD}
@@ -24,7 +22,6 @@ services:
       - "5433:5432"
 
   resource-service:
-    container_name: resource-service
     build:
       context: ./resource-service
       dockerfile: Dockerfile
@@ -38,12 +35,18 @@ services:
       RESOURCE_S3_ACCESS_KEY_ID: ${RESOURCE_S3_ACCESS_KEY_ID}
       RESOURCE_S3_SECRET_ACCESS_KEY: ${RESOURCE_S3_SECRET_ACCESS_KEY}
       RESOURCE_S3_BUCKET_NAME: ${RESOURCE_S3_BUCKET_NAME}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      RESOURCE_PROCESSOR_TOPIC_NAME: ${RESOURCE_PROCESSOR_TOPIC_NAME}
+      RESOURCE_REPLICATION_FACTOR: ${KAFKA_REPLICATION_FACTOR:-1}
+      RESOURCE_PARTITION_COUNT: ${RESOURCE_PARTITION_COUNT:-1}
+      RESOURCE_ACKS_CONFIG: ${RESOURCE_ACKS_CONFIG:-all}
     ports:
       - "8081:8081"
     depends_on:
       - resource-db
       - service-registry
       - localstack
+      - kafka
 
   song-service:
     build:
@@ -64,11 +67,19 @@ services:
     build:
       context: ./resource-processor
       dockerfile: Dockerfile
+    environment:
+      RESOURCE_PROCESSOR_CONSUMER_GROUP_ID: ${RESOURCE_PROCESSOR_CONSUMER_GROUP_ID}
+      RESOURCE_PROCESSOR_OFFSET_RESET: ${RESOURCE_PROCESSOR_OFFSET_RESET}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      RESOURCE_PROCESSOR_TOPIC_NAME: ${RESOURCE_PROCESSOR_TOPIC_NAME}
+      EUREKA_REGISTRATION_URL: ${EUREKA_REGISTRATION_URL}
     ports:
       - "8083:8083"
+    depends_on:
+      - kafka
+      - service-registry
 
   service-registry:
-    container_name: service-registry
     build:
       context: ./service-registry
       dockerfile: Dockerfile
@@ -87,3 +98,34 @@ services:
       - HOSTNAME_EXTERNAL=localstack
     volumes:
       - ./init-scripts/localstack/localstack-ready.sh:/etc/localstack/init/ready.d/localstack-ready.sh
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://${KAFKA_OUTSIDE_URL}
+      KAFKA_LISTENERS: INSIDE://${KAFKA_OUTSIDE_URL}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_REPLICATION_FACTOR:-1}
+      KAFKA_TOPICS: ${RESOURCE_PROCESSOR_TOPIC_NAME}
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT
+      KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: 20000
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    ports:
+      - "9092:9092"
+    depends_on:
+      zookeeper:
+        condition: service_healthy

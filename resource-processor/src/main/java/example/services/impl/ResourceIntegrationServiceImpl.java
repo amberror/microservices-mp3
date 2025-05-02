@@ -10,11 +10,11 @@ import org.springframework.stereotype.Service;
 public class ResourceIntegrationServiceImpl implements ResourceIntegrationService {
 
 	@Resource
-	private ResourceFeignClient client;
+	private ResourceFeignClient resourceFeignClient;
 
 	@Override
-	public boolean isResourceExist(Long id) {
-		return client.isResourceExist(id);
+	public byte[] getResource(Long id) {
+		return resourceFeignClient.getResource(id);
 	}
 
 }
