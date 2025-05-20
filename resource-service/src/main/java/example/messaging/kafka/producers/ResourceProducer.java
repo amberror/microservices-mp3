@@ -11,13 +11,13 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ResourceProducer {
 	@Autowired
-	private KafkaTemplate<String, Long> resourceKafkaTemplate;
+	private KafkaTemplate<Long, Long> resourceKafkaTemplate;
 
 	@Value("${kafka.producer.resource.topic.name}")
 	private String resourceTopicName;
 
 	public void sendMessage(Long resourceId) {
-		resourceKafkaTemplate.send(resourceTopicName, resourceId);
+		resourceKafkaTemplate.send(resourceTopicName, resourceId, resourceId);
 		log.info("[RESOURCE-PRODUCER] message sent [{}]", resourceId);
 	}
 }

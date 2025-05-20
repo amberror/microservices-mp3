@@ -51,6 +51,9 @@ public class S3ServiceImpl implements S3Service {
 
 	@Override
 	public Optional<String> uploadFile(String bucketName, byte[] fileBytes) {
+		if(fileBytes == null) {
+			return Optional.empty();
+		}
 		return this.uploadFile(bucketName, HashUtils.generateNameFromBytes(fileBytes), fileBytes);
 	}
 

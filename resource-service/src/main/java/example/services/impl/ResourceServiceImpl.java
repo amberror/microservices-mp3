@@ -70,7 +70,7 @@ public class ResourceServiceImpl implements ResourceService {
 	@Transactional
 	public ResourceDTO saveFile(byte[] fileBytes) {
 		String fileIdentifier = s3Service.uploadFile(resourceBucketName, fileBytes)
-				.orElseThrow(() -> new ResourceSaveException("Error occurred during resource save to s3 bucket " + resourceBucketName));
+				.orElseThrow(() -> new ResourceSaveException(String.format(ResourceConstants.SAVE_S3_FAILED_MESSAGE_TEMPLATE, resourceBucketName)));
 		ResourceEntity entity = resourceRepository.save(ResourceEntity.builder().fileIdentifier(fileIdentifier).build());
 		resourceProducer.sendMessage(entity.getId());
 		return conversionService.convert(entity, ResourceDTO.class);
@@ -87,7 +87,7 @@ public class ResourceServiceImpl implements ResourceService {
 		resourceRepository.deleteAllById(existedIds);
 		ResourceBatchDTO dto = ResourceBatchDTO.builder().ids(existedIds).build();
 		if(!songIntegrationService.deleteMetadata(dto)) {
-			throw new RestClientException("Failed to delete resource's metadata in song service");
+			throw new RestClientException(ResourceConstants.REST_DELETE_FILE_FAILED_MESSAGE);
 		}
 		return dto;
 	}

@@ -1,12 +1,12 @@
-package example.config;
+package contracts.config;
 
-import lombok.extern.slf4j.Slf4j;
+import contracts.utils.KafkaMessageVerifier;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.LongDeserializer;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
@@ -16,20 +16,24 @@ import java.util.HashMap;
 
 
 @EnableKafka
-@Configuration
-@Slf4j
-public class KafkaConfig {
+@TestConfiguration
+@PropertySource(value = "classpath:application-stub.properties")
+public class ContractStubConfig {
 
 	@Bean
-	public ConsumerFactory<Long, Long> resourceConsumerFactory(
+	public KafkaMessageVerifier kafkaTemplateMessageVerifier() {
+		return new KafkaMessageVerifier();
+	}
+
+	@Bean
+	public ConsumerFactory<Long, Long> testResourceConsumerFactory(
 			@Value("${kafka.resource.consumer.group.id}") String consumerGroupId,
-			@Value("${kafka.bootstrap.servers}") String bootstrapServers,
-			@Value("${kafka.resource.consumer.auto.offset.reset}") String offsetReset
+			@Value("${kafka.bootstrap.servers}") String bootstrapServers
 	) {
 		return new DefaultKafkaConsumerFactory<>(new HashMap<>() {{
 			put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
 			put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
-			put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, offsetReset);
+			put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 			put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, Boolean.TRUE);
 			put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class);
 			put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class);
@@ -37,10 +41,13 @@ public class KafkaConfig {
 	}
 
 	@Bean
-	public ConcurrentKafkaListenerContainerFactory<Long, Long> resourceKafkaListenerContainerFactory(ConsumerFactory<Long, Long> resourceConsumerFactory) {
+	public ConcurrentKafkaListenerContainerFactory<Long, Long> testResourceKafkaListenerContainerFactory(ConsumerFactory<Long, Long> testResourceConsumerFactory) {
 		return new ConcurrentKafkaListenerContainerFactory<>() {{
-			setConsumerFactory(resourceConsumerFactory);
+			setConsumerFactory(testResourceConsumerFactory);
 		}};
 	}
 
 }
+
+
+

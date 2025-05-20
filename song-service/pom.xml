@@ -82,6 +82,57 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.27.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-contract-wiremock</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-contract-verifier</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-contract-stub-runner</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>1.21.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>1.21.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>1.21.0</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>
@@ -102,7 +153,29 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-contract-maven-plugin</artifactId>
+                <version>4.2.1</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <packageWithBaseClasses>contracts.base</packageWithBaseClasses>
+                    <baseClassMappings>
+                        <baseClassMapping>
+                            <contractPackageRegex>.*/rest/.*</contractPackageRegex>
+                            <baseClassFQN>contracts.base.ContractRestVerifierBase</baseClassFQN>
+                        </baseClassMapping>
+                    </baseClassMappings>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>convert</goal>
+                            <goal>generateStubs</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
 </project>

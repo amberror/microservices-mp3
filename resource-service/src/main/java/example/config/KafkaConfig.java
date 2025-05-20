@@ -27,7 +27,7 @@ public class KafkaConfig {
 	private String bootstrapServers;
 
 	@Bean
-	public ProducerFactory<String, Long> resourceProducerFactory(
+	public ProducerFactory<Long, Long> resourceProducerFactory(
 			@Value("${kafka.producer.resource.acks}") String acks,
 			@Value("${kafka.producer.resource.reties}") String reties,
 			@Value("${kafka.producer.resource.maxInFlight}") String maxInFlight,
@@ -43,13 +43,13 @@ public class KafkaConfig {
 			put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, allRetriesTimeout);
 			put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, timeoutPerRequest);
 			put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, idempotence);
-			put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+			put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class);
 			put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, LongSerializer.class);
 		}});
 	}
 
 	@Bean
-	public KafkaTemplate<String, Long> resourceKafkaTemplate(ProducerFactory<String, Long> resourceProducerFactory) {
+	public KafkaTemplate<Long, Long> resourceKafkaTemplate(ProducerFactory<Long, Long> resourceProducerFactory) {
 		return new KafkaTemplate<>(resourceProducerFactory);
 	}
 

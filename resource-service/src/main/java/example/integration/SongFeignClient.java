@@ -14,7 +14,11 @@ import java.util.List;
 import java.util.Map;
 
 
-@FeignClient(name = "song-service", configuration = FeignDefaultClientConfig.class)
+@FeignClient(
+		name = "song-service",
+		configuration = FeignDefaultClientConfig.class,
+		url = "${song-service.integration.default.url}"
+)
 public interface SongFeignClient {
 
 	@PostMapping("/songs")
