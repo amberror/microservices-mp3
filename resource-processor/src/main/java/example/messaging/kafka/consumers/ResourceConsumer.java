@@ -3,9 +3,11 @@ package example.messaging.kafka.consumers;
 import example.messaging.kafka.services.MessagingService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.RetryableTopic;
-import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.kafka.retrytopic.DltStrategy;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 
@@ -18,18 +20,30 @@ public class ResourceConsumer {
 	private MessagingService messagingService;
 
 	@RetryableTopic(
-			attempts = "3",
-			backoff = @Backoff(delay = 2000),
-			autoCreateTopics = "false"
+			attempts = "2",
+			backoff = @Backoff(delay = 3000),
+			dltStrategy = DltStrategy.FAIL_ON_ERROR,
+			autoStartDltHandler = "false"
 	)
 	@KafkaListener(
 			topics = "${kafka.consumer.resource.topic.name}",
 			groupId = "${kafka.resource.consumer.group.id}",
 			containerFactory = "resourceKafkaListenerContainerFactory"
 	)
-	public void consumeMessage(final @Payload Long resourceId) {
-		log.info("[RESOURCE-CONSUMER] message received [{}]", resourceId);
-		messagingService.processResourceEvent(resourceId);
+	public void consumeMessage(ConsumerRecord<Long, Long> record) {
+		log.info("[RESOURCE-CONSUMER] message received [{}]", record.key());
+		messagingService.processResourceEvent(record.value());
+	}
+
+	@DltHandler
+	public void consumeMessageDlt(ConsumerRecord<Long, Long> record) {
+		log.info("[DEAD-LETTER-RESOURCE-CONSUMER] message received [{}]", record.toString());
+		try {
+			this.consumeMessage(record);
+		} catch (Exception e) {
+			log.error("[DEAD-LETTER-ERROR-{}] {}", record.topic(), e.getMessage(), e);
+			throw new RuntimeException(e);
+		}
 	}
 
 }

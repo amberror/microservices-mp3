@@ -67,7 +67,6 @@ public class ResourceServiceImpl implements ResourceService {
 	}
 
 	@Override
-	@Transactional
 	public ResourceDTO saveFile(byte[] fileBytes) {
 		String fileIdentifier = s3Service.uploadFile(resourceBucketName, fileBytes)
 				.orElseThrow(() -> new ResourceSaveException(String.format(ResourceConstants.SAVE_S3_FAILED_MESSAGE_TEMPLATE, resourceBucketName)));
@@ -77,7 +76,6 @@ public class ResourceServiceImpl implements ResourceService {
 	}
 
 	@Override
-	@Transactional
 	public ResourceBatchDTO deleteFiles(String ids) {
 		List<Long> existedIds = !StringUtils.isBlank(ids) ?
 				this.parseStringCommaSeparated(ids) :
