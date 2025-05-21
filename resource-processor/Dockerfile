@@ -12,6 +12,7 @@ RUN mvn -B -e clean install -Dmaven.test.skip=true
 
 FROM eclipse-temurin:17-jre-alpine-3.21
 WORKDIR /app
+RUN apk add --no-cache curl
 COPY --from=builder /app/target/*.jar resource-processor.jar
 EXPOSE 8083
 CMD ["java", "-jar", "resource-processor.jar"]
