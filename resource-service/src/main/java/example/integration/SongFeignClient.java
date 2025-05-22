@@ -16,8 +16,7 @@ import java.util.Map;
 
 @FeignClient(
 		name = "song-service",
-		configuration = FeignDefaultClientConfig.class,
-		url = "${song-service.integration.default.url}"
+		configuration = FeignDefaultClientConfig.class
 )
 public interface SongFeignClient {
 

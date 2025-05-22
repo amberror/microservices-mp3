@@ -1,0 +1,49 @@
+# Ignore Maven target directory (build artifacts)
+target/
+
+# Ignore local Maven repository (already handled by the dependencies stage)
+.m2/
+
+# Ignore IDE-specific files and directories
+*.iml
+.idea/
+.vscode/
+*.swp
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+logs/
+*.out
+
+# Ignore temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Ignore Git-related files
+.git/
+.gitignore
+
+# Ignore build-related files
+build/
+.gradle/
+.gradle-cache/
+
+# Ignore Docker-related files (except Dockerfile)
+docker-compose.override.yml
+.env
+
+# Ignore test-related files
+**/test-output/
+**/surefire-reports/
+**/jacoco.exec
+
+# Ignore unnecessary configuration files
+*.properties~
+*.yml~
+*.yaml~

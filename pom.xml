@@ -7,6 +7,8 @@
         <module>resource-service</module>
         <module>song-service</module>
         <module>service-registry</module>
+		<module>resource-processor</module>
+		<module>gateway-service</module>
     </modules>
 	<groupId>com.example</groupId>
 	<artifactId>microservices</artifactId>
