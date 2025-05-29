@@ -1,12 +1,11 @@
 package component.steps;
 
 
-import example.dto.ResourceDTO;
+import example.dto.integration.StorageResponseDTO;
 import example.entities.ResourceEntity;
+import example.enums.StorageType;
 import example.exceptions.ResourceSaveException;
-import example.messaging.kafka.producers.ResourceProducer;
 import example.repositories.ResourceRepository;
-import example.services.ConstraintsService;
 import example.services.S3Service;
 import example.services.impl.ResourceServiceImpl;
 import example.utils.HashUtils;
@@ -17,7 +16,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Assertions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;
@@ -38,7 +36,7 @@ public class ResourceServiceSaveFileStepsTest {
 
 	private byte[] fileBytes;
 	private String fileIdentifier;
-	private ResourceDTO result;
+	private Long result;
 	private Exception exception;
 
 	@Given("a valid file")
@@ -50,7 +48,7 @@ public class ResourceServiceSaveFileStepsTest {
 	@When("the file is saved")
 	public void theFileIsSaved() {
 		try {
-			result = resourceService.saveFile(fileBytes);
+			result = resourceService.saveFileStage(fileBytes);
 		} catch (Exception e) {
 			exception = e;
 		}
@@ -59,7 +57,7 @@ public class ResourceServiceSaveFileStepsTest {
 	@When("the file is saved with null value")
 	public void theFileIsSavedWithNullValue() {
 		try {
-			result = resourceService.saveFile(null);
+			result = resourceService.saveFileStage(null);
 		} catch (Exception e) {
 			exception = e;
 		}
@@ -67,14 +65,20 @@ public class ResourceServiceSaveFileStepsTest {
 
 	@Then("the file should be uploaded to S3 with identifier")
 	public void theFileShouldBeUploadedToS3() {
-		byte[] fileContent = s3Service.readFile(RESOURCE_BUCKET_NAME, fileIdentifier);
+		StorageResponseDTO storageData = StorageResponseDTO.builder()
+				.storageType(StorageType.STAGING.toString())
+				.path("/staging")
+				.bucket("stage-bucket")
+				.id(2L)
+				.build();
+		byte[] fileContent = s3Service.readFile(storageData, fileIdentifier);
 		Assertions.assertNotNull(fileContent);
 	}
 
 	@Then("the file identifier should be saved in the database")
 	public void theFileMetadataShouldBeSavedInTheDatabase() {
-		ResourceEntity entity = resourceRepository.findById(result.getId())
-				.orElseThrow(() -> new EntityNotFoundException("Entity with id " + result.getId() + " not found"));
+		ResourceEntity entity = resourceRepository.findById(result)
+				.orElseThrow(() -> new EntityNotFoundException("Entity with id " + result + " not found"));
 		Assertions.assertNotNull(entity.getFileIdentifier());
 		Assertions.assertEquals(entity.getFileIdentifier(), fileIdentifier);
 	}
@@ -82,7 +86,6 @@ public class ResourceServiceSaveFileStepsTest {
 	@Then("the returned ResourceDTO should have id")
 	public void theReturnedResourceDTOShouldHaveFileIdentifier() {
 		Assertions.assertNotNull(result);
-		Assertions.assertNotNull(result.getId());
 	}
 
 	@Then("a ResourceSaveException should be thrown")

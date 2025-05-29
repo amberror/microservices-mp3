@@ -30,4 +30,13 @@ public class FallbackController {
 						.body("Song Service is currently unavailable. Please try again later.")
 		);
 	}
+
+	@RequestMapping("/fallback/storages")
+	public Mono<ResponseEntity<String>> storageServiceFallback() {
+		LOG.info("[STORAGE-FALLBACK]");
+		return Mono.just(
+				ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+						.body("Storage Service is currently unavailable. Please try again later.")
+		);
+	}
 }

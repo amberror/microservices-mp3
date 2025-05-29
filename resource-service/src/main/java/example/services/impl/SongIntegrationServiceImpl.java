@@ -1,8 +1,8 @@
 package example.services.impl;
 
 import example.constants.ResourceConstants;
-import example.dto.ResourceBatchDTO;
-import example.dto.SongRequestDTO;
+import example.dto.integration.SongBatchRequestDTO;
+import example.dto.integration.SongRequestDTO;
 import example.integration.SongFeignClient;
 import example.services.SongIntegrationService;
 import jakarta.annotation.Resource;
@@ -26,7 +26,7 @@ public class SongIntegrationServiceImpl implements SongIntegrationService {
 	}
 
 	@Override
-	public boolean deleteMetadata(ResourceBatchDTO dto) {
+	public boolean deleteMetadata(SongBatchRequestDTO dto) {
 		String ids = dto.getIds().stream()
 				.map(String::valueOf)
 				.collect(Collectors.joining(ResourceConstants.COMMA_SEPARATOR));

@@ -1,8 +1,8 @@
 package example.integration;
 
 import example.config.FeignDefaultClientConfig;
-import example.dto.ResourceBatchDTO;
-import example.dto.SongRequestDTO;
+import example.dto.integration.SongBatchRequestDTO;
+import example.dto.integration.SongRequestDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,5 +24,5 @@ public interface SongFeignClient {
 	ResponseEntity<Map<String, Long>> saveMetadata(@RequestBody SongRequestDTO dto);
 
 	@DeleteMapping("/songs")
-	ResponseEntity<Map<String, List<Long>>> deleteMetadata(@RequestParam("id") String ids, @RequestBody ResourceBatchDTO dto);
+	ResponseEntity<Map<String, List<Long>>> deleteMetadata(@RequestParam("id") String ids, @RequestBody SongBatchRequestDTO dto);
 }

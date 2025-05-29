@@ -69,13 +69,13 @@ public class ResourceServiceE2EStepsTest {
 
 	@Given("a valid file exists")
 	public void aFileExistsWithID() {
-		ResourceDTO resourceDTO;
+		Long resourceId;
 		try {
-			resourceDTO = resourceService.saveFile(resourceFile.getContentAsByteArray());
+			resourceId = resourceService.saveFileStage(resourceFile.getContentAsByteArray());
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		testFileId = resourceDTO.getId();
+		testFileId = resourceId;
 	}
 
 	@When("the file is uploaded")

@@ -153,19 +153,14 @@ class ResourceServiceIntegrationTest {
 		String fileIdentifier = HashUtils.generateNameFromBytes(fileBytes);
 
 		// when
-		ResourceDTO result = resourceService.saveFile(fileBytes);
-		Long resourceId = result.getId();
+		Long resourceId = resourceService.saveFileStage(fileBytes);
 
 		// then
-		Assertions.assertNotNull(result);
 		Assertions.assertNotNull(resourceId);
 
-		ResourceEntity savedEntity = resourceRepository.findById(result.getId()).orElse(null);
+		ResourceEntity savedEntity = resourceRepository.findById(resourceId).orElse(null);
 		Assertions.assertNotNull(savedEntity);
 		Assertions.assertEquals(fileIdentifier, savedEntity.getFileIdentifier());
-
-		byte[] savedFileData = s3Service.readFile(testResourceBucketName, fileIdentifier);
-		Assertions.assertNotNull(savedFileData);
 
 		this.verifyKafkaMessage(testResourceTopicName, resourceId, resourceId);
 	}

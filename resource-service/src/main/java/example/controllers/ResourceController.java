@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 
 @RestController
 @RequestMapping("/resources")
@@ -21,8 +23,8 @@ public class ResourceController {
 	private ResourceService resourceService;
 
 	@PostMapping(consumes = ResourceConstants.AUDIO_MPEG)
-	public ResponseEntity<ResourceDTO> postFile(@RequestBody byte[] fileBytes) {
-		return ResponseEntity.ok(resourceService.saveFile(fileBytes));
+	public ResponseEntity<Map<String, Long>> postFile(@RequestBody byte[] fileBytes) {
+		return ResponseEntity.ok(Map.of(ID, resourceService.saveFileStage(fileBytes)));
 	}
 
 	@GetMapping("/{id}")

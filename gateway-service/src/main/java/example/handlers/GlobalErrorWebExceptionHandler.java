@@ -30,7 +30,6 @@ public class GlobalErrorWebExceptionHandler extends AbstractErrorWebExceptionHan
 	public GlobalErrorWebExceptionHandler(GlobalErrorAttributes attributes,
 										  ApplicationContext applicationContext,
 										  ServerCodecConfigurer serverCodecConfigurer) {
-
 		super(attributes, new WebProperties.Resources(), applicationContext);
 		super.setMessageWriters(serverCodecConfigurer.getWriters());
 		super.setMessageReaders(serverCodecConfigurer.getReaders());
@@ -41,7 +40,7 @@ public class GlobalErrorWebExceptionHandler extends AbstractErrorWebExceptionHan
 		return RouterFunctions.route(RequestPredicates.all(), this::renderErrorResponse);
 	}
 
-	private Mono<ServerResponse> renderErrorResponse (ServerRequest request) {
+	private Mono<ServerResponse> renderErrorResponse(ServerRequest request) {
 		Map<String, Object> errorPropertiesMap = getErrorAttributes(request, ErrorAttributeOptions.defaults());
 		HttpStatus status = HttpStatus.valueOf((int) errorPropertiesMap.get("status"));
 		LOG.info("[EXCEPTION-HANDLER] Handled status : [{}], message : [{}], path : [{}]",

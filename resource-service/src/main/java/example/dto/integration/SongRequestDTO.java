@@ -1,4 +1,4 @@
-package example.dto;
+package example.dto.integration;
 
 import lombok.Builder;
 import lombok.Data;

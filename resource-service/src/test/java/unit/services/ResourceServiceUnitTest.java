@@ -3,7 +3,10 @@ package unit.services;
 import example.constants.ResourceConstants;
 import example.dto.ResourceBatchDTO;
 import example.dto.ResourceDTO;
+import example.dto.integration.SongBatchRequestDTO;
+import example.dto.integration.StorageResponseDTO;
 import example.entities.ResourceEntity;
+import example.enums.StorageType;
 import example.exceptions.InvalidArgumentException;
 import example.exceptions.ResourceSaveException;
 import example.messaging.kafka.producers.ResourceProducer;
@@ -11,6 +14,7 @@ import example.repositories.ResourceRepository;
 import example.services.ConstraintsService;
 import example.services.S3Service;
 import example.services.SongIntegrationService;
+import example.services.StorageIntegrationService;
 import example.services.impl.ResourceServiceImpl;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Assertions;
@@ -57,6 +61,9 @@ class ResourceServiceUnitTest {
 	@Mock
 	private SongIntegrationService songIntegrationService;
 
+	@Mock
+	private StorageIntegrationService storageIntegrationService;
+
 	private static final Long MOCK_ID = 1L;
 	private static final String FILE_IDENTIFIER = "hash484lfe94873495mfe";
 	private static final byte[] FILE_CONTENT = "test content".getBytes();
@@ -72,13 +79,25 @@ class ResourceServiceUnitTest {
 			.collect(Collectors.joining(","));
 	private ResourceEntity mockResourceEntity;
 	private ResourceDTO mockResourceDTO;
+	private StorageResponseDTO mockStageStorageData;
+	private StorageResponseDTO mockPermanentStorageData;
 
 	@BeforeEach
 	public void beforeEach() {
 		mockResourceEntity = this.createResourceEntity(MOCK_ID);
 		mockResourceDTO = this.createResourceDTO(MOCK_ID);
-
-		ReflectionTestUtils.setField(resourceService, "resourceBucketName", MOCK_BUCKET_NAME);
+		mockStageStorageData = StorageResponseDTO.builder()
+				.storageType(StorageType.STAGING.toString())
+				.path("/staging")
+				.bucket("stage-bucket")
+				.id(2L)
+				.build();
+		mockPermanentStorageData = StorageResponseDTO.builder()
+				.storageType(StorageType.PERMANENT.toString())
+				.path("/permanent")
+				.bucket("permanent-bucket")
+				.id(1L)
+				.build();
 	}
 
 	@Test
@@ -116,40 +135,22 @@ class ResourceServiceUnitTest {
 	}
 
 	@Test
-	void testSaveFile_Success() {
-		// given
-		Mockito.when(s3Service.uploadFile(anyString(), Mockito.eq(FILE_CONTENT))).thenReturn(Optional.of(FILE_IDENTIFIER));
+	void testSaveFileStage_Success() {
+		Mockito.when(storageIntegrationService.getStorageByType(StorageType.STAGING)).thenReturn(mockStageStorageData);
+		Mockito.when(s3Service.uploadFile(mockStageStorageData, FILE_CONTENT)).thenReturn(FILE_IDENTIFIER);
 		Mockito.when(resourceRepository.save(any(ResourceEntity.class))).thenReturn(mockResourceEntity);
-		Mockito.when(conversionService.convert(mockResourceEntity, ResourceDTO.class)).thenReturn(mockResourceDTO);
 
 		// when
-		ResourceDTO result = resourceService.saveFile(FILE_CONTENT);
+		Long result = resourceService.saveFileStage(FILE_CONTENT);
 
 		// then
 		Assertions.assertNotNull(result);
-		Assertions.assertEquals(MOCK_ID, result.getId());
-		Assertions.assertEquals(FILE_CONTENT, result.getData());
+		Assertions.assertEquals(MOCK_ID, result);
 
-		Mockito.verify(s3Service).uploadFile(anyString(), Mockito.eq(FILE_CONTENT));
+		Mockito.verify(storageIntegrationService).getStorageByType(StorageType.STAGING);
+		Mockito.verify(s3Service).uploadFile(mockStageStorageData, FILE_CONTENT);
 		Mockito.verify(resourceRepository).save(any(ResourceEntity.class));
-		Mockito.verify(conversionService).convert(mockResourceEntity, ResourceDTO.class);
 		Mockito.verify(resourceProducer).sendMessage(MOCK_ID);
-	}
-
-	@Test
-	void testSaveFile_S3UploadFailure() {
-		// given
-		Mockito.when(s3Service.uploadFile(anyString(), Mockito.eq(FILE_CONTENT)))
-				.thenReturn(Optional.empty());
-
-		// when/then
-		ResourceSaveException exception = Assertions.assertThrows(ResourceSaveException.class, () -> resourceService.saveFile(FILE_CONTENT));
-
-		Assertions.assertEquals(String.format(ResourceConstants.SAVE_S3_FAILED_MESSAGE_TEMPLATE, MOCK_BUCKET_NAME), exception.getMessage());
-		Mockito.verify(s3Service).uploadFile(anyString(), Mockito.eq(FILE_CONTENT));
-		Mockito.verifyNoInteractions(resourceRepository);
-		Mockito.verifyNoInteractions(conversionService);
-		Mockito.verifyNoInteractions(resourceProducer);
 	}
 
 	@Test
@@ -159,12 +160,14 @@ class ResourceServiceUnitTest {
 				.map(this::createResourceEntity)
 				.toList();
 
+		Mockito.when(storageIntegrationService.getStorageByType(Mockito.eq(StorageType.PERMANENT))).thenReturn(mockPermanentStorageData);
 		Mockito.doNothing().when(constraintsService).checkInlineStringIdsConstraints(MOCK_ID_LIST_STRING);
 		Mockito.doReturn(resourceEntities).when(resourceRepository).findAllById(anyList());
 		Mockito.doReturn(Boolean.TRUE).when(resourceRepository).existsById(anyLong());
-		Mockito.when(s3Service.deleteFile(MOCK_BUCKET_NAME, FILE_IDENTIFIER)).thenReturn(Boolean.TRUE);
+		Mockito.when(s3Service.deleteFile(mockPermanentStorageData, FILE_IDENTIFIER)).thenReturn(Boolean.TRUE);
 		Mockito.doNothing().when(resourceRepository).deleteAllById(anyList());
-		Mockito.when(songIntegrationService.deleteMetadata(any(ResourceBatchDTO.class))).thenReturn(Boolean.TRUE);
+		Mockito.when(songIntegrationService.deleteMetadata(any(SongBatchRequestDTO.class))).thenReturn(Boolean.TRUE);
+		Mockito.when(conversionService.convert(any(SongBatchRequestDTO.class), any(Class.class))).thenReturn(ResourceBatchDTO.builder().ids(MOCK_ID_LIST).build());
 
 		// when
 		ResourceBatchDTO result = resourceService.deleteFiles(MOCK_ID_LIST_STRING);
@@ -175,9 +178,9 @@ class ResourceServiceUnitTest {
 
 		Mockito.verify(constraintsService).checkInlineStringIdsConstraints(MOCK_ID_LIST_STRING);
 		Mockito.verify(resourceRepository).findAllById(anyList());
-		Mockito.verify(s3Service, Mockito.times(3)).deleteFile(MOCK_BUCKET_NAME, FILE_IDENTIFIER);
+		Mockito.verify(s3Service, Mockito.times(3)).deleteFile(mockPermanentStorageData, FILE_IDENTIFIER);
 		Mockito.verify(resourceRepository).deleteAllById(anyList());
-		Mockito.verify(songIntegrationService).deleteMetadata(any(ResourceBatchDTO.class));
+		Mockito.verify(songIntegrationService).deleteMetadata(any(SongBatchRequestDTO.class));
 	}
 
 	@Test
@@ -187,11 +190,12 @@ class ResourceServiceUnitTest {
 				.map(this::createResourceEntity)
 				.toList();
 
+		Mockito.when(storageIntegrationService.getStorageByType(Mockito.eq(StorageType.PERMANENT))).thenReturn(mockPermanentStorageData);
 		Mockito.doNothing().when(constraintsService).checkInlineStringIdsConstraints(MOCK_ID_LIST_STRING);
 		Mockito.doReturn(resourceEntities).when(resourceRepository).findAllById(anyList());
-		Mockito.when(s3Service.deleteFile(MOCK_BUCKET_NAME, FILE_IDENTIFIER)).thenReturn(Boolean.TRUE);
+		Mockito.when(s3Service.deleteFile(mockPermanentStorageData, FILE_IDENTIFIER)).thenReturn(Boolean.TRUE);
 		Mockito.doNothing().when(resourceRepository).deleteAllById(anyList());
-		Mockito.when(songIntegrationService.deleteMetadata(any(ResourceBatchDTO.class))).thenReturn(Boolean.FALSE);
+		Mockito.when(songIntegrationService.deleteMetadata(any(SongBatchRequestDTO.class))).thenReturn(Boolean.FALSE);
 
 		// when/then
 		RestClientException exception = Assertions.assertThrows(RestClientException.class, () -> resourceService.deleteFiles(MOCK_ID_LIST_STRING));
@@ -200,16 +204,17 @@ class ResourceServiceUnitTest {
 
 		Mockito.verify(constraintsService).checkInlineStringIdsConstraints(MOCK_ID_LIST_STRING);
 		Mockito.verify(resourceRepository).findAllById(anyList());
-		Mockito.verify(s3Service, Mockito.times(3)).deleteFile(MOCK_BUCKET_NAME, FILE_IDENTIFIER);
+		Mockito.verify(s3Service, Mockito.times(3)).deleteFile(mockPermanentStorageData, FILE_IDENTIFIER);
 		Mockito.verify(resourceRepository).deleteAllById(anyList());
-		Mockito.verify(songIntegrationService).deleteMetadata(any(ResourceBatchDTO.class));
+		Mockito.verify(songIntegrationService).deleteMetadata(any(SongBatchRequestDTO.class));
 	}
 
 	@Test
 	void testDeleteFiles_EmptyIds() {
 		// given
 		String emptyIds = "";
-		Mockito.when(songIntegrationService.deleteMetadata(any(ResourceBatchDTO.class))).thenReturn(Boolean.TRUE);
+		Mockito.when(songIntegrationService.deleteMetadata(any(SongBatchRequestDTO.class))).thenReturn(Boolean.TRUE);
+		Mockito.when(conversionService.convert(any(SongBatchRequestDTO.class), any(Class.class))).thenReturn(ResourceBatchDTO.builder().ids(List.of()).build());
 
 		// when
 		ResourceBatchDTO result = resourceService.deleteFiles(emptyIds);
@@ -226,6 +231,7 @@ class ResourceServiceUnitTest {
 		// given
 		Mockito.doThrow(new InvalidArgumentException("Invalid ID format"))
 				.when(constraintsService).checkInlineStringIdsConstraints(MOCK_INVALID_ID_STRING);
+
 
 		// when/then
 		InvalidArgumentException exception = Assertions.assertThrows(InvalidArgumentException.class, () -> resourceService.deleteFiles(MOCK_INVALID_ID_STRING));

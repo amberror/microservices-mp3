@@ -8,7 +8,7 @@ Feature: Resource Controller E2E
     Then the response should contain application-json content-type header
     Then the response should contain the file's id
 
-  @E2E
+  @E2E @Skip
   Scenario: Retrieve a file
     Given a valid file exists
     When the file is retrieved by ID

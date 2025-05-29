@@ -4,6 +4,7 @@ import example.constants.ResourceProcessorConstants;
 import example.enums.FileMetadata;
 import example.models.FileMetadataModel;
 import example.services.MediaMetadataService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
@@ -13,6 +14,7 @@ import java.util.Optional;
 
 
 @Service
+@Slf4j
 public class MediaMetadataServiceImpl implements MediaMetadataService {
 
 	@Override
@@ -24,6 +26,7 @@ public class MediaMetadataServiceImpl implements MediaMetadataService {
 			tika.parse(tikaIS, metadata);
 			result = Optional.of(this.populateMetadata(metadata));
 		} catch (Exception e) {
+			log.error("Error during metadata extraction", e);
 			result = Optional.empty();
 		}
 		return result;

@@ -3,20 +3,17 @@ package example.services.impl;
 import example.constants.ResourceConstants;
 import example.dto.ResourceBatchDTO;
 import example.dto.ResourceDTO;
+import example.dto.integration.SongBatchRequestDTO;
+import example.dto.integration.StorageResponseDTO;
 import example.entities.ResourceEntity;
+import example.enums.StorageType;
 import example.exceptions.InvalidArgumentException;
-import example.exceptions.ResourceSaveException;
 import example.messaging.kafka.producers.ResourceProducer;
 import example.repositories.ResourceRepository;
-import example.services.ConstraintsService;
-import example.services.ResourceService;
-import example.services.S3Service;
-import example.services.SongIntegrationService;
+import example.services.*;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -46,15 +43,18 @@ public class ResourceServiceImpl implements ResourceService {
 	@Resource
 	private ResourceProducer resourceProducer;
 
-	@Value("${resource.s3.bucket.name}")
-	private String resourceBucketName;
+	@Resource
+	private StorageIntegrationService storageIntegrationService;
 
 	@Override
 	public ResourceDTO getFile(Long id) {
-		constraintsService.checkIdConstraints(id);
-		ResourceEntity entity = resourceRepository.findById(id)
-				.orElseThrow(() -> new EntityNotFoundException(String.format(ResourceConstants.RESOURCE_NOT_FOUND_MESSAGE_TEMPLATE, id)));
-		return conversionService.convert(entity, ResourceDTO.class);
+		return conversionService.convert(this.getResourceEntity(id), ResourceDTO.class);
+	}
+
+	@Override
+	public byte[] getFileDataFromStorage(Long id, StorageType storageType) {
+		return s3Service.readFile(storageIntegrationService.getStorageByType(storageType),
+				this.getResourceEntity(id).getFileIdentifier());
 	}
 
 	@Override
@@ -67,12 +67,12 @@ public class ResourceServiceImpl implements ResourceService {
 	}
 
 	@Override
-	public ResourceDTO saveFile(byte[] fileBytes) {
-		String fileIdentifier = s3Service.uploadFile(resourceBucketName, fileBytes)
-				.orElseThrow(() -> new ResourceSaveException(String.format(ResourceConstants.SAVE_S3_FAILED_MESSAGE_TEMPLATE, resourceBucketName)));
+	public Long saveFileStage(byte[] fileBytes) {
+		StorageResponseDTO stagingStorage = storageIntegrationService.getStorageByType(StorageType.STAGING);
+		String fileIdentifier = s3Service.uploadFile(stagingStorage, fileBytes);
 		ResourceEntity entity = resourceRepository.save(ResourceEntity.builder().fileIdentifier(fileIdentifier).build());
 		resourceProducer.sendMessage(entity.getId());
-		return conversionService.convert(entity, ResourceDTO.class);
+		return entity.getId();
 	}
 
 	@Override
@@ -80,16 +80,23 @@ public class ResourceServiceImpl implements ResourceService {
 		List<Long> existedIds = !StringUtils.isBlank(ids) ?
 				this.parseStringCommaSeparated(ids) :
 				List.of();
+		StorageResponseDTO permanentStorage = storageIntegrationService.getStorageByType(StorageType.PERMANENT);
 		resourceRepository.findAllById(existedIds)
-				.forEach(entity -> s3Service.deleteFile(resourceBucketName, entity.getFileIdentifier()));
+				.forEach(entity -> s3Service.deleteFile(permanentStorage, entity.getFileIdentifier()));
 		resourceRepository.deleteAllById(existedIds);
-		ResourceBatchDTO dto = ResourceBatchDTO.builder().ids(existedIds).build();
+		SongBatchRequestDTO dto = SongBatchRequestDTO.builder().ids(existedIds).build();
+		//TODO : make kafka deletion event
 		if(!songIntegrationService.deleteMetadata(dto)) {
 			throw new RestClientException(ResourceConstants.REST_DELETE_FILE_FAILED_MESSAGE);
 		}
-		return dto;
+		return conversionService.convert(dto, ResourceBatchDTO.class);
 	}
 
+	private ResourceEntity getResourceEntity(Long id) {
+		constraintsService.checkIdConstraints(id);
+		return resourceRepository.findById(id)
+				.orElseThrow(() -> new EntityNotFoundException(String.format(ResourceConstants.RESOURCE_NOT_FOUND_MESSAGE_TEMPLATE, id)));
+	}
 
 	private List<Long> parseStringCommaSeparated(String value) {
 		constraintsService.checkInlineStringIdsConstraints(value);

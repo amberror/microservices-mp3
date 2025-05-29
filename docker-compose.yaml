@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_USER: ${RESOURCE_DB_USERNAME}
       POSTGRES_PASSWORD: ${RESOURCE_DB_PASSWORD}
-      POSTGRES_DB: resource-db
+      POSTGRES_DB: ${RESOURCE_DB_NAME}
     volumes:
       - ./init-scripts/resource-db:/docker-entrypoint-initdb.d
     ports:
@@ -26,7 +26,7 @@ services:
     environment:
       POSTGRES_USER: ${SONG_DB_USERNAME}
       POSTGRES_PASSWORD: ${SONG_DB_PASSWORD}
-      POSTGRES_DB: song-db
+      POSTGRES_DB: ${SONG_DB_NAME}
     volumes:
       - ./init-scripts/song-db:/docker-entrypoint-initdb.d
     ports:
@@ -36,6 +36,28 @@ services:
         condition: service_started
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "${SONG_DB_USERNAME}" ]
+      start_period: 10s
+      interval: 5s
+      timeout: 5s
+      retries: 6
+    labels:
+      autoheal-feature: true
+
+  storage-db:
+    image: postgres:17-alpine3.21
+    environment:
+      POSTGRES_USER: ${STORAGE_DB_USERNAME}
+      POSTGRES_PASSWORD: ${STORAGE_DB_PASSWORD}
+      POSTGRES_DB: ${STORAGE_DB_NAME}
+    volumes:
+      - ./init-scripts/storage-db:/docker-entrypoint-initdb.d
+    ports:
+      - "5434:5432"
+    depends_on:
+      autoheal:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${STORAGE_DB_USERNAME}" ]
       start_period: 10s
       interval: 5s
       timeout: 5s
@@ -56,19 +78,18 @@ services:
       RESOURCE_S3_REGION: ${RESOURCE_S3_REGION}
       RESOURCE_S3_ACCESS_KEY_ID: ${RESOURCE_S3_ACCESS_KEY_ID}
       RESOURCE_S3_SECRET_ACCESS_KEY: ${RESOURCE_S3_SECRET_ACCESS_KEY}
-      RESOURCE_S3_BUCKET_NAME: ${RESOURCE_S3_BUCKET_NAME}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
       RESOURCE_PROCESSOR_TOPIC_NAME: ${RESOURCE_PROCESSOR_TOPIC_NAME}
       RESOURCE_REPLICATION_FACTOR: ${KAFKA_REPLICATION_FACTOR:-1}
       RESOURCE_PARTITION_COUNT: ${RESOURCE_PARTITION_COUNT:-1}
       RESOURCE_ACKS_CONFIG: ${RESOURCE_ACKS_CONFIG:-all}
-      SONG_INTEGRATION_BASE_URL: ${SONG_INTEGRATION_BASE_URL}
+      RESOURCE_RESULT_PROCESSOR_TOPIC_NAME: ${RESOURCE_RESULT_PROCESSOR_TOPIC_NAME}
+      RESOURCE_RESULT_PROCESSOR_CONSUMER_GROUP_ID: ${RESOURCE_RESULT_PROCESSOR_CONSUMER_GROUP_ID}
+      RESOURCE_RESULT_PROCESSOR_OFFSET_RESET: ${RESOURCE_RESULT_PROCESSOR_OFFSET_RESET}
     ports:
       - "8081:8081"
     depends_on:
       resource-db:
-        condition: service_healthy
-      localstack:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -76,7 +97,7 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8081/actuator/health"]
-      start_period: 10s
+      start_period: 20s
       interval: 5s
       timeout: 5s
       retries: 6
@@ -101,10 +122,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8082/actuator/health"]
-      start_period: 10s
+      start_period: 20s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
 
@@ -118,6 +139,9 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
       RESOURCE_PROCESSOR_TOPIC_NAME: ${RESOURCE_PROCESSOR_TOPIC_NAME}
       EUREKA_REGISTRATION_URL: ${EUREKA_REGISTRATION_URL}
+      RESOURCE_RESULT_REPLICATION_FACTOR: ${KAFKA_REPLICATION_FACTOR:-1}
+      RESOURCE_RESULT_PARTITION_COUNT: ${RESOURCE_RESULT_PARTITION_COUNT:-1}
+      RESOURCE_RESULT_ACKS_CONFIG: ${RESOURCE_RESULT_ACKS_CONFIG:-all}
     ports:
       - "8083:8083"
     depends_on:
@@ -125,7 +149,34 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8083/actuator/health"]
-      start_period: 10s
+      start_period: 20s
+      interval: 5s
+      timeout: 5s
+      retries: 6
+    labels:
+      autoheal-feature: true
+
+  storage-service:
+    build:
+      context: ./storage-service
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: ${STORAGE_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${STORAGE_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${STORAGE_DB_PASSWORD}
+      EUREKA_REGISTRATION_URL: ${EUREKA_REGISTRATION_URL}
+    ports:
+      - "8084:8084"
+    depends_on:
+      storage-db:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+      service-registry:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8084/actuator/health"]
+      start_period: 20s
       interval: 5s
       timeout: 5s
       retries: 6
@@ -143,7 +194,7 @@ services:
         condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8761/actuator/health"]
-      start_period: 10s
+      start_period: 15s
       interval: 5s
       timeout: 5s
       retries: 6
@@ -163,7 +214,7 @@ services:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-sf", "http://localhost:8080/actuator/health" ]
-      start_period: 10s
+      start_period: 20s
       interval: 5s
       timeout: 5s
       retries: 6
@@ -187,7 +238,7 @@ services:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "curl -sf localhost:4566/_localstack/init/ready | grep -q '\"completed\": true,'"]
-      start_period: 10s
+      start_period: 15s
       interval: 5s
       timeout: 5s
       retries: 6
@@ -233,7 +284,7 @@ services:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "kafka-topics", "--bootstrap-server", "kafka:9092", "--list" ]
-      start_period: 10s
+      start_period: 15s
       interval: 5s
       timeout: 5s
       retries: 6

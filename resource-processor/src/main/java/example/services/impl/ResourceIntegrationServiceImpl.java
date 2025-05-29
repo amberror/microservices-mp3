@@ -1,5 +1,6 @@
 package example.services.impl;
 
+import example.enums.StorageType;
 import example.integration.ResourceFeignClient;
 import example.services.ResourceIntegrationService;
 import jakarta.annotation.Resource;
@@ -15,6 +16,11 @@ public class ResourceIntegrationServiceImpl implements ResourceIntegrationServic
 	@Override
 	public byte[] getResource(Long id) {
 		return resourceFeignClient.getResource(id);
+	}
+
+	@Override
+	public byte[] getResourceWithStorage(Long id, StorageType storageType) {
+		return resourceFeignClient.getResourceWithStorage(id, storageType.toString());
 	}
 
 }

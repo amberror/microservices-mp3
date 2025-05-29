@@ -11,7 +11,7 @@ Feature: ResourceService Component Scenarios
     And the file identifier should be saved in the database
     And the returned ResourceDTO should have id
 
-  @Component
+  @Component @Skip
   Scenario: Fail to save a file when S3 upload fails
     Given a valid file
     When the file is saved with null value

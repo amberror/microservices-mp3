@@ -2,17 +2,18 @@ package example.config;
 
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.LongDeserializer;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.springframework.kafka.core.KafkaAdmin;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.core.*;
+import org.springframework.kafka.listener.ContainerProperties;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -71,5 +72,30 @@ public class KafkaConfig {
 				.compact()
 				.build();
 	}
+
+	@Bean
+	public ConsumerFactory<Long, Long> resourceResultConsumerFactory(
+			@Value("${kafka.resource-result.consumer.group.id}") String consumerGroupId,
+			@Value("${kafka.bootstrap.servers}") String bootstrapServers,
+			@Value("${kafka.resource-result.consumer.auto.offset.reset}") String offsetReset
+	) {
+		return new DefaultKafkaConsumerFactory<>(new HashMap<>() {{
+			put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+			put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
+			put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, offsetReset);
+			put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, Boolean.TRUE);
+			put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class);
+			put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class);
+		}});
+	}
+
+	@Bean
+	public ConcurrentKafkaListenerContainerFactory<Long, Long> resourceResultKafkaListenerContainerFactory(ConsumerFactory<Long, Long> resourceResultConsumerFactory) {
+		return new ConcurrentKafkaListenerContainerFactory<>() {{
+			setConsumerFactory(resourceResultConsumerFactory);
+			getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
+		}};
+	}
+
 
 }

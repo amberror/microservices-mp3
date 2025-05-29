@@ -14,4 +14,5 @@ public class ResourceConstants {
 	public static final String ID_POSITIVE_VALUE_MESSAGE_TEMPLATE = "Invalid value '%s' for %s. Must be a positive integer";
 	public static final String SAVE_S3_FAILED_MESSAGE_TEMPLATE = "Error occurred during resource save to s3 bucket %s";
 	public static final String REST_DELETE_FILE_FAILED_MESSAGE = "Failed to delete resource's metadata in song service";
+	public static final String STAGING_STORAGE_DELETION_FAILED_MESSAGE_TEMPLATE = "Error during file deletion from staging storage. Staging data [%s], file key [%s]";
 }

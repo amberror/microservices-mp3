@@ -19,6 +19,7 @@ spring:
           uri: lb://SONG-SERVICE
           predicates:
             - Path=/songs/**
+            - Method=GET
           filters:
             - name: CircuitBreaker
               args:
@@ -70,6 +71,29 @@ spring:
               args:
                 name: gatewayCircuitBreaker
                 fallbackUri: forward:/fallback/resources
+
+        - id: storage-service-root
+          uri: lb://STORAGE-SERVICE
+          predicates:
+            - Path=/storages
+            - Method=POST,GET
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: gatewayCircuitBreaker
+                fallbackUri: forward:/fallback/storages
+
+        - id: storage-service-delete
+          uri: lb://STORAGE-SERVICE
+          predicates:
+            - Path=/storages
+            - Method=DELETE
+            - Query=id
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: gatewayCircuitBreaker
+                fallbackUri: forward:/fallback/storages
 
 
 resilience4j.circuitbreaker:
