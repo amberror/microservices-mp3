@@ -15,4 +15,4 @@ WORKDIR /app
 RUN apk add --no-cache curl
 COPY --from=builder /app/target/*.jar song-service.jar
 EXPOSE 8082
-CMD ["java", "-jar", "song-service.jar"]
+CMD ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+UseG1GC", "-jar", "song-service.jar"]

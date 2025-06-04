@@ -39,3 +39,7 @@ mvnw.cmd
 
 ### Environment ###
 .env
+
+### Logs ###
+/grafana/tempo-data/*
+!/grafana/tempo-data/

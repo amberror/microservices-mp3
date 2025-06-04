@@ -15,4 +15,4 @@ WORKDIR /app
 RUN apk add --no-cache curl
 COPY --from=builder /app/target/*.jar resource-processor.jar
 EXPOSE 8083
-CMD ["java", "-jar", "resource-processor.jar"]
+CMD ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+UseG1GC", "-jar", "resource-processor.jar"]

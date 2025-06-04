@@ -15,4 +15,4 @@ WORKDIR /app
 RUN apk add --no-cache curl
 COPY --from=builder /app/target/*.jar gateway-service.jar
 EXPOSE 8080
-CMD ["java", "-jar", "gateway-service.jar"]
+CMD ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+UseG1GC", "-jar", "gateway-service.jar"]

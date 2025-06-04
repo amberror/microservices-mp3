@@ -1,5 +1,6 @@
 # Ignore Maven target directory (build artifacts)
 target/
+**/target/
 
 # Ignore local Maven repository (already handled by the dependencies stage)
 .m2/
@@ -28,6 +29,8 @@ logs/
 # Ignore Git-related files
 .git/
 .gitignore
+**/.git/
+**/*.md
 
 # Ignore build-related files
 build/
@@ -37,6 +40,7 @@ build/
 # Ignore Docker-related files (except Dockerfile)
 docker-compose.override.yml
 .env
+**/docker-compose.yml
 
 # Ignore test-related files
 **/test-output/

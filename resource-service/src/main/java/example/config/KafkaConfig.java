@@ -50,7 +50,9 @@ public class KafkaConfig {
 
 	@Bean
 	public KafkaTemplate<Long, Long> resourceKafkaTemplate(ProducerFactory<Long, Long> resourceProducerFactory) {
-		return new KafkaTemplate<>(resourceProducerFactory);
+		KafkaTemplate<Long, Long> template = new KafkaTemplate<>(resourceProducerFactory);
+		template.setObservationEnabled(Boolean.TRUE);
+		return template;
 	}
 
 	@Bean
@@ -94,6 +96,7 @@ public class KafkaConfig {
 		return new ConcurrentKafkaListenerContainerFactory<>() {{
 			setConsumerFactory(resourceResultConsumerFactory);
 			getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
+			getContainerProperties().setObservationEnabled(Boolean.TRUE);
 		}};
 	}
 

@@ -15,4 +15,4 @@ WORKDIR /app
 RUN apk add --no-cache curl
 COPY --from=builder /app/target/*.jar storage-service.jar
 EXPOSE 8084
-CMD ["java", "-jar", "storage-service.jar"]
+CMD ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+UseG1GC", "-jar", "storage-service.jar"]

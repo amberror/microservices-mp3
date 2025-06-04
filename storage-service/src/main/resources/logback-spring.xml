@@ -1,0 +1,36 @@
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread,%mdc{traceId:-none}] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+        <http>
+            <url>${LOKI_LOGS_URL}</url>
+        </http>
+        <format>
+            <label>
+                <pattern>
+                    app = ${APPLICATION_NAME},
+                    host = ${HOSTNAME},
+                    level=%level
+                </pattern>
+                <structuredMetadataPattern>
+                    level = %level,
+                    thread = %thread,
+                    class = %logger,
+                    traceId = %mdc{traceId:-none}
+                </structuredMetadataPattern>
+            </label>
+            <message>
+                <pattern>${LOKI_LOG_TEMPLATE}</pattern>
+            </message>
+        </format>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="LOKI"/>
+    </root>
+</configuration>

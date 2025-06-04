@@ -15,4 +15,4 @@ WORKDIR /app
 RUN apk add --no-cache curl
 COPY --from=builder /app/target/*.jar service-registry.jar
 EXPOSE 8761
-CMD ["java", "-jar", "service-registry.jar"]
+CMD ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+UseG1GC", "-jar", "service-registry.jar"]

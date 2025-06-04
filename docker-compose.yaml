@@ -17,7 +17,7 @@ services:
       start_period: 10s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
 
@@ -39,7 +39,7 @@ services:
       start_period: 10s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
 
@@ -61,7 +61,7 @@ services:
       start_period: 10s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
 
@@ -86,6 +86,11 @@ services:
       RESOURCE_RESULT_PROCESSOR_TOPIC_NAME: ${RESOURCE_RESULT_PROCESSOR_TOPIC_NAME}
       RESOURCE_RESULT_PROCESSOR_CONSUMER_GROUP_ID: ${RESOURCE_RESULT_PROCESSOR_CONSUMER_GROUP_ID}
       RESOURCE_RESULT_PROCESSOR_OFFSET_RESET: ${RESOURCE_RESULT_PROCESSOR_OFFSET_RESET}
+      TEMPO_SPANS_URL: ${TEMPO_SPANS_URL}
+      LOKI_LOGS_URL: ${LOKI_LOGS_URL}
+      APPLICATION_NAME: ${RESOURCE_SERVICE_NAME}
+      LOKI_LOG_TEMPLATE: ${LOKI_LOG_TEMPLATE}
+      EUREKA_PROMETHEUS_SCAPE_ENABLED: ${EUREKA_PROMETHEUS_SCAPE_ENABLED}
     ports:
       - "8081:8081"
     depends_on:
@@ -100,7 +105,7 @@ services:
       start_period: 20s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
 
@@ -113,6 +118,11 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SONG_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SONG_DB_PASSWORD}
       EUREKA_REGISTRATION_URL: ${EUREKA_REGISTRATION_URL}
+      TEMPO_SPANS_URL: ${TEMPO_SPANS_URL}
+      LOKI_LOGS_URL: ${LOKI_LOGS_URL}
+      APPLICATION_NAME: ${SONG_SERVICE_NAME}
+      LOKI_LOG_TEMPLATE: ${LOKI_LOG_TEMPLATE}
+      EUREKA_PROMETHEUS_SCAPE_ENABLED: ${EUREKA_PROMETHEUS_SCAPE_ENABLED}
     ports:
       - "8082:8082"
     depends_on:
@@ -125,7 +135,7 @@ services:
       start_period: 20s
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 13
     labels:
       autoheal-feature: true
 
@@ -142,6 +152,11 @@ services:
       RESOURCE_RESULT_REPLICATION_FACTOR: ${KAFKA_REPLICATION_FACTOR:-1}
       RESOURCE_RESULT_PARTITION_COUNT: ${RESOURCE_RESULT_PARTITION_COUNT:-1}
       RESOURCE_RESULT_ACKS_CONFIG: ${RESOURCE_RESULT_ACKS_CONFIG:-all}
+      TEMPO_SPANS_URL: ${TEMPO_SPANS_URL}
+      LOKI_LOGS_URL: ${LOKI_LOGS_URL}
+      APPLICATION_NAME: ${RESOURCE_PROCESSOR_NAME}
+      LOKI_LOG_TEMPLATE: ${LOKI_LOG_TEMPLATE}
+      EUREKA_PROMETHEUS_SCAPE_ENABLED: ${EUREKA_PROMETHEUS_SCAPE_ENABLED}
     ports:
       - "8083:8083"
     depends_on:
@@ -152,7 +167,7 @@ services:
       start_period: 20s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
 
@@ -165,6 +180,11 @@ services:
       SPRING_DATASOURCE_USERNAME: ${STORAGE_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${STORAGE_DB_PASSWORD}
       EUREKA_REGISTRATION_URL: ${EUREKA_REGISTRATION_URL}
+      TEMPO_SPANS_URL: ${TEMPO_SPANS_URL}
+      LOKI_LOGS_URL: ${LOKI_LOGS_URL}
+      APPLICATION_NAME: ${STORAGE_SERVICE_NAME}
+      LOKI_LOG_TEMPLATE: ${LOKI_LOG_TEMPLATE}
+      EUREKA_PROMETHEUS_SCAPE_ENABLED: ${EUREKA_PROMETHEUS_SCAPE_ENABLED}
     ports:
       - "8084:8084"
     depends_on:
@@ -179,7 +199,7 @@ services:
       start_period: 20s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
 
@@ -187,17 +207,24 @@ services:
     build:
       context: ./service-registry
       dockerfile: Dockerfile
+    environment:
+      APPLICATION_NAME: ${SERVICE_REGISTRY_NAME}
+      TEMPO_SPANS_URL: ${TEMPO_SPANS_URL}
+      LOKI_LOGS_URL: ${LOKI_LOGS_URL}
+      LOKI_LOG_TEMPLATE: ${LOKI_LOG_TEMPLATE}
     ports:
       - "8761:8761"
     depends_on:
       autoheal:
+        condition: service_started
+      grafana:
         condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8761/actuator/health"]
       start_period: 15s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
 
@@ -207,6 +234,11 @@ services:
       dockerfile: Dockerfile
     environment:
       EUREKA_REGISTRATION_URL: ${EUREKA_REGISTRATION_URL}
+      TEMPO_SPANS_URL: ${TEMPO_SPANS_URL}
+      LOKI_LOGS_URL: ${LOKI_LOGS_URL}
+      APPLICATION_NAME: ${GATEWAY_SERVICE_NAME}
+      LOKI_LOG_TEMPLATE: ${LOKI_LOG_TEMPLATE}
+      EUREKA_PROMETHEUS_SCAPE_ENABLED: ${EUREKA_PROMETHEUS_SCAPE_ENABLED}
     ports:
       - "8080:8080"
     depends_on:
@@ -217,7 +249,7 @@ services:
       start_period: 20s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
 
@@ -241,7 +273,7 @@ services:
       start_period: 15s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
 
@@ -254,7 +286,7 @@ services:
       start_period: 10s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     ports:
       - "2181:2181"
     depends_on:
@@ -287,9 +319,68 @@ services:
       start_period: 15s
       interval: 5s
       timeout: 5s
-      retries: 6
+      retries: 10
     labels:
       autoheal-feature: true
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prom_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana:/etc/grafana/provisioning/datasources
+    depends_on:
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+      tempo:
+        condition: service_started
+
+  tempo:
+    image: grafana/tempo:latest
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: "0.5"
+    container_name: tempo
+    command:
+      - "-config.file=/etc/tempo/config.yaml"
+    ports:
+      - "3200:3200"
+      - "9411:9411"
+      - "9095:9095"
+    volumes:
+      - ./grafana/tempo-data:/var/lib/tempo
+      - ./grafana/tempo-config/tempo-config.yaml:/etc/tempo/config.yaml
+    environment:
+      - TEMPO_STORAGE_BACKEND=local
+      - TEMPO_LOG_LEVEL=info
+
+  loki:
+    image: grafana/loki:main
+    container_name: loki
+    command:
+      - "-config.file=/etc/loki/local-config.yaml"
+    ports:
+      - "3100:3100"
 
   autoheal:
     image: willfarrell/autoheal:latest
@@ -302,3 +393,7 @@ services:
       AUTOHEAL_CONTAINER_LABEL: autoheal-feature
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  prom_data:
+  grafana_data:
