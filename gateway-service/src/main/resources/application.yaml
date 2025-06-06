@@ -3,6 +3,8 @@ spring:
     name: gateway-service
   cloud:
     gateway:
+      default-filters:
+        - RemoveRequestHeader=Cookie
       routes:
         - id: song-service-root
           uri: lb://SONG-SERVICE
@@ -10,10 +12,24 @@ spring:
             - Path=/songs
             - Method=POST
           filters:
+            - name: JwtAuthentication
+              args:
+                allowAnonymous: false
+                roles:
+                  - ADMIN
             - name: CircuitBreaker
               args:
                 name: gatewayCircuitBreaker
                 fallbackUri: forward:/fallback/songs
+                statusCodes:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                  - TOO_MANY_REQUESTS
+                excludeStatusCodes:
+                  - UNAUTHORIZED
+                  - FORBIDDEN
+
 
         - id: song-service
           uri: lb://SONG-SERVICE
@@ -21,10 +37,24 @@ spring:
             - Path=/songs/**
             - Method=GET
           filters:
+            - name: JwtAuthentication
+              args:
+                allowAnonymous: false
+                roles:
+                  - USER
             - name: CircuitBreaker
               args:
                 name: gatewayCircuitBreaker
                 fallbackUri: forward:/fallback/songs
+                statusCodes:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                  - TOO_MANY_REQUESTS
+                excludeStatusCodes:
+                  - UNAUTHORIZED
+                  - FORBIDDEN
+
 
         - id: song-service-delete
           uri: lb://SONG-SERVICE
@@ -33,10 +63,24 @@ spring:
             - Method=DELETE
             - Query=id
           filters:
+            - name: JwtAuthentication
+              args:
+                allowAnonymous: false
+                roles:
+                  - ADMIN
             - name: CircuitBreaker
               args:
                 name: gatewayCircuitBreaker
                 fallbackUri: forward:/fallback/songs
+                statusCodes:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                  - TOO_MANY_REQUESTS
+                excludeStatusCodes:
+                  - UNAUTHORIZED
+                  - FORBIDDEN
+
 
         - id: resource-service-root
           uri: lb://RESOURCE-SERVICE
@@ -44,10 +88,24 @@ spring:
             - Path=/resources
             - Method=POST
           filters:
+            - name: JwtAuthentication
+              args:
+                allowAnonymous: false
+                roles:
+                   - ADMIN
             - name: CircuitBreaker
               args:
                 name: gatewayCircuitBreaker
                 fallbackUri: forward:/fallback/resources
+                statusCodes:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                  - TOO_MANY_REQUESTS
+                excludeStatusCodes:
+                  - UNAUTHORIZED
+                  - FORBIDDEN
+
 
         - id: resource-service
           uri: lb://RESOURCE-SERVICE
@@ -55,10 +113,24 @@ spring:
             - Path=/resources/**
             - Method=GET
           filters:
+            - name: JwtAuthentication
+              args:
+                allowAnonymous: false
+                roles:
+                  - USER
             - name: CircuitBreaker
               args:
                 name: gatewayCircuitBreaker
                 fallbackUri: forward:/fallback/resources
+                statusCodes:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                  - TOO_MANY_REQUESTS
+                excludeStatusCodes:
+                  - UNAUTHORIZED
+                  - FORBIDDEN
+
 
         - id: resource-service-delete
           uri: lb://RESOURCE-SERVICE
@@ -67,21 +139,74 @@ spring:
             - Method=DELETE
             - Query=id
           filters:
+            - name: JwtAuthentication
+              args:
+                allowAnonymous: false
+                roles:
+                  - ADMIN
             - name: CircuitBreaker
               args:
                 name: gatewayCircuitBreaker
                 fallbackUri: forward:/fallback/resources
+                statusCodes:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                  - TOO_MANY_REQUESTS
+                excludeStatusCodes:
+                  - UNAUTHORIZED
+                  - FORBIDDEN
 
-        - id: storage-service-root
+
+        - id: storage-service-root-post
           uri: lb://STORAGE-SERVICE
           predicates:
             - Path=/storages
-            - Method=POST,GET
+            - Method=POST
           filters:
+            - name: JwtAuthentication
+              args:
+                allowAnonymous: false
+                roles:
+                  - ADMIN
             - name: CircuitBreaker
               args:
                 name: gatewayCircuitBreaker
                 fallbackUri: forward:/fallback/storages
+                statusCodes:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                  - TOO_MANY_REQUESTS
+                excludeStatusCodes:
+                  - UNAUTHORIZED
+                  - FORBIDDEN
+
+
+        - id: storage-service-root-get
+          uri: lb://STORAGE-SERVICE
+          predicates:
+            - Path=/storages
+            - Method=GET
+          filters:
+            - name: JwtAuthentication
+              args:
+                allowAnonymous: false
+                roles:
+                  - USER
+            - name: CircuitBreaker
+              args:
+                name: gatewayCircuitBreaker
+                fallbackUri: forward:/fallback/storages
+                statusCodes:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                  - TOO_MANY_REQUESTS
+                excludeStatusCodes:
+                  - UNAUTHORIZED
+                  - FORBIDDEN
+
 
         - id: storage-service-delete
           uri: lb://STORAGE-SERVICE
@@ -90,18 +215,56 @@ spring:
             - Method=DELETE
             - Query=id
           filters:
+            - name: JwtAuthentication
+              args:
+                allowAnonymous: false
+                roles:
+                  - ADMIN
             - name: CircuitBreaker
               args:
                 name: gatewayCircuitBreaker
                 fallbackUri: forward:/fallback/storages
+                statusCodes:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                  - TOO_MANY_REQUESTS
+                excludeStatusCodes:
+                  - UNAUTHORIZED
+                  - FORBIDDEN
 
 
-resilience4j.circuitbreaker:
-  instances:
-    gatewayCircuitBreaker:
-      registerHealthIndicator: true
-      slidingWindowSize: 10
-      failureRateThreshold: 50
-      waitDurationInOpenState: 10s
-      permittedNumberOfCallsInHalfOpenState: 3
-      minimumNumberOfCalls: 5
+        - id: auth-service-get-token
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/oauth2/token
+            - Method=POST
+          filters:
+            - name: JwtAuthentication
+              args:
+                allowAnonymous: true
+            - name: CircuitBreaker
+              args:
+                name: gatewayCircuitBreaker
+                fallbackUri: forward:/fallback/auth
+                statusCodes:
+                  - BAD_GATEWAY
+                  - SERVICE_UNAVAILABLE
+                  - GATEWAY_TIMEOUT
+                  - TOO_MANY_REQUESTS
+                excludeStatusCodes:
+                  - UNAUTHORIZED
+                  - FORBIDDEN
+
+
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      exampleCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true

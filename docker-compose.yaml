@@ -239,14 +239,43 @@ services:
       APPLICATION_NAME: ${GATEWAY_SERVICE_NAME}
       LOKI_LOG_TEMPLATE: ${LOKI_LOG_TEMPLATE}
       EUREKA_PROMETHEUS_SCAPE_ENABLED: ${EUREKA_PROMETHEUS_SCAPE_ENABLED}
+      DEFAULT_ISSUER: ${DEFAULT_ISSUER}
     ports:
       - "8080:8080"
     depends_on:
       service-registry:
         condition: service_healthy
+      auth-service:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-sf", "http://localhost:8080/actuator/health" ]
       start_period: 20s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    labels:
+      autoheal-feature: true
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    environment:
+      EUREKA_REGISTRATION_URL: ${EUREKA_REGISTRATION_URL}
+      TEMPO_SPANS_URL: ${TEMPO_SPANS_URL}
+      LOKI_LOGS_URL: ${LOKI_LOGS_URL}
+      APPLICATION_NAME: ${AUTH_SERVICE_NAME}
+      LOKI_LOG_TEMPLATE: ${LOKI_LOG_TEMPLATE}
+      EUREKA_PROMETHEUS_SCAPE_ENABLED: ${EUREKA_PROMETHEUS_SCAPE_ENABLED}
+      DEFAULT_ISSUER: ${DEFAULT_ISSUER}
+    ports:
+      - "8085:8085"
+    depends_on:
+      service-registry:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-sf", "http://localhost:8085/actuator/health" ]
+      start_period: 10s
       interval: 5s
       timeout: 5s
       retries: 10

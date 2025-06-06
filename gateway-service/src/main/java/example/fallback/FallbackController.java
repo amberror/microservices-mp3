@@ -39,4 +39,15 @@ public class FallbackController {
 						.body("Storage Service is currently unavailable. Please try again later.")
 		);
 	}
+
+	@RequestMapping("/fallback/auth")
+	public Mono<ResponseEntity<String>> authServiceFallback() {
+		LOG.info("[AUTH-FALLBACK]");
+		return Mono.just(
+				ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+						.body("Authentication Service is currently unavailable. Please try again later.")
+		);
+	}
+
+
 }
