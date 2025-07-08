@@ -9,6 +9,7 @@ import org.apache.kafka.common.serialization.LongSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
@@ -27,6 +28,7 @@ public class KafkaConfig {
 	private String bootstrapServers;
 
 	@Bean
+	@Lazy
 	public ProducerFactory<Long, Long> resourceProducerFactory(
 			@Value("${kafka.producer.resource.acks}") String acks,
 			@Value("${kafka.producer.resource.reties}") String reties,
@@ -49,6 +51,7 @@ public class KafkaConfig {
 	}
 
 	@Bean
+	@Lazy
 	public KafkaTemplate<Long, Long> resourceKafkaTemplate(ProducerFactory<Long, Long> resourceProducerFactory) {
 		KafkaTemplate<Long, Long> template = new KafkaTemplate<>(resourceProducerFactory);
 		template.setObservationEnabled(Boolean.TRUE);
@@ -56,6 +59,7 @@ public class KafkaConfig {
 	}
 
 	@Bean
+	@Lazy
 	public KafkaAdmin admin() {
 		Map<String, Object> configs = new HashMap<>();
 		configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -63,6 +67,7 @@ public class KafkaConfig {
 	}
 
 	@Bean
+	@Lazy
 	public NewTopic resourceProcessorTopic(
 			@Value("${kafka.producer.resource.topic.name}") String resourceTopicName,
 			@Value("${kafka.resource.replication.factor}") Integer replicas,
@@ -76,6 +81,7 @@ public class KafkaConfig {
 	}
 
 	@Bean
+	@Lazy
 	public ConsumerFactory<Long, Long> resourceResultConsumerFactory(
 			@Value("${kafka.resource-result.consumer.group.id}") String consumerGroupId,
 			@Value("${kafka.bootstrap.servers}") String bootstrapServers,
@@ -92,6 +98,7 @@ public class KafkaConfig {
 	}
 
 	@Bean
+	@Lazy
 	public ConcurrentKafkaListenerContainerFactory<Long, Long> resourceResultKafkaListenerContainerFactory(ConsumerFactory<Long, Long> resourceResultConsumerFactory) {
 		return new ConcurrentKafkaListenerContainerFactory<>() {{
 			setConsumerFactory(resourceResultConsumerFactory);

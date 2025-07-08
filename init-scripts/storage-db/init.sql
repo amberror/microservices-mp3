@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS storage_entity (
 );
 
 INSERT INTO storage_entity (id, storage_type, bucket, path)
-VALUES (1, 'PERMANENT', 'resource-permanent-bucket', '/permanent');
+VALUES (1, 'PERMANENT', 'resource-permanent-bucket-mp3-microservices-stack', '/permanent');
 
 INSERT INTO storage_entity (id, storage_type, bucket, path)
-VALUES (2, 'STAGING', 'resource-staging-bucket', '/staging');
+VALUES (2, 'STAGING', 'resource-staging-bucket-mp3-microservices-stack', '/staging');

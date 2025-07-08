@@ -1,0 +1,189 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Shared resources for microservices.
+
+Resources:
+  # Resource Queue
+  ResourceQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: resource-sqs
+      VisibilityTimeout: 30
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ResourceQueueDLQ.Arn
+        maxReceiveCount: 5
+
+  ResourceQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: resource-sqs-dlq
+      VisibilityTimeout: 30
+
+  # Resource Result Queue
+  ResourceResultQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: resource-result-sqs
+      VisibilityTimeout: 30
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ResourceResultQueueDLQ.Arn
+        maxReceiveCount: 5
+
+  ResourceResultQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: resource-result-sqs-dlq
+      VisibilityTimeout: 30
+
+  ResourceServiceS3PermanentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "resource-permanent-bucket-${AWS::StackName}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  ResourceServiceS3StagingBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "resource-staging-bucket-${AWS::StackName}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # Resource Secrets Manager Secret
+  ResourceServiceDBSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: resource-db-secret
+      Description: DB credentials
+      SecretString: |
+        {
+          "spring.datasource.url":"jdbc:postgresql://resource-db:5432/resource-db",
+          "spring.datasource.username":"postgres",
+          "spring.datasource.password":"postgres",
+          "spring.datasource.driver-class-name":"org.postgresql.Driver"
+        }
+
+  # IAM User for Resource Service
+  ResourceServiceIAMUser:
+    Type: AWS::IAM::User
+    DependsOn:
+      - ResourceServiceS3PermanentBucket
+      - ResourceServiceS3StagingBucket
+      - ResourceServiceDBSecret
+      - ResourceQueue
+      - ResourceQueueDLQ
+      - ResourceResultQueue
+      - ResourceResultQueueDLQ
+    Properties:
+      UserName: resource-service-user
+      Policies:
+        - PolicyName: ResourceServiceAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # S3 Permissions
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${ResourceServiceS3PermanentBucket}/*"
+                  - !Sub "arn:aws:s3:::${ResourceServiceS3StagingBucket}/*"
+
+              # Secrets Manager Permissions
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource:
+                  - !Ref ResourceServiceDBSecret
+
+              # SQS Permissions (Shared Queues)
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ListQueueTags
+                  - sqs:CreateQueue
+                Resource:
+                  - !GetAtt ResourceQueue.Arn
+                  - !GetAtt ResourceResultQueue.Arn
+                  - !GetAtt ResourceQueueDLQ.Arn
+                  - !GetAtt ResourceResultQueueDLQ.Arn
+
+  # Access Key for Resource Service IAM User
+  ResourceServiceAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref ResourceServiceIAMUser
+      Status: Active
+
+  # Store Access Key and Secret Key in Secrets Manager
+  ResourceServiceCredentials:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: resource-service-credentials
+      Description: Resource Service Credentials
+      SecretString: !Sub |
+        {
+          "accessKeyId": "${ResourceServiceAccessKey}",
+          "secretAccessKey": "${ResourceServiceAccessKey.SecretAccessKey}"
+        }
+
+  # IAM User for Resource Processor
+  ResourceProcessorIAMUser:
+    Type: AWS::IAM::User
+    DependsOn:
+      - ResourceQueue
+      - ResourceQueueDLQ
+      - ResourceResultQueue
+      - ResourceResultQueueDLQ
+    Properties:
+      UserName: resource-processor-user
+      Policies:
+        - PolicyName: ResourceProcessorAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # SQS Permissions (Shared Queues)
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ListQueueTags
+                  - sqs:CreateQueue
+                Resource:
+                  - !GetAtt ResourceQueue.Arn
+                  - !GetAtt ResourceResultQueue.Arn
+                  - !GetAtt ResourceQueueDLQ.Arn
+                  - !GetAtt ResourceResultQueueDLQ.Arn
+
+  # Access Key for Resource Processor IAM User
+  ResourceProcessorAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref ResourceProcessorIAMUser
+      Status: Active
+
+  # Store Access Key and Secret Key in Secrets Manager
+  ResourceProcessorCredentials:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: resource-processor-credentials
+      Description: Resource Processor Credentials
+      SecretString: !Sub |
+        {
+          "accessKeyId": "${ResourceProcessorAccessKey}",
+          "secretAccessKey": "${ResourceProcessorAccessKey.SecretAccessKey}"
+        }

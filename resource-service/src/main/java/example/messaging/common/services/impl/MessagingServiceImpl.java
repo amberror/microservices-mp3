@@ -1,10 +1,10 @@
-package example.messaging.kafka.services.impl;
+package example.messaging.common.services.impl;
 
 import example.constants.ResourceConstants;
 import example.dto.integration.StorageResponseDTO;
 import example.entities.ResourceEntity;
 import example.enums.StorageType;
-import example.messaging.kafka.services.MessagingService;
+import example.messaging.common.services.MessagingService;
 import example.repositories.ResourceRepository;
 import example.services.S3Service;
 import example.services.StorageIntegrationService;

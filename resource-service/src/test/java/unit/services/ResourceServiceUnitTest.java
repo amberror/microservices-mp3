@@ -8,8 +8,7 @@ import example.dto.integration.StorageResponseDTO;
 import example.entities.ResourceEntity;
 import example.enums.StorageType;
 import example.exceptions.InvalidArgumentException;
-import example.exceptions.ResourceSaveException;
-import example.messaging.kafka.producers.ResourceProducer;
+import example.messaging.common.producers.ResourceProducer;
 import example.repositories.ResourceRepository;
 import example.services.ConstraintsService;
 import example.services.S3Service;
@@ -26,7 +25,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestClientException;
 
 import java.util.ArrayList;

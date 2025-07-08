@@ -1,10 +1,10 @@
-package example.messaging.kafka.services.impl;
+package example.messaging.common.services.impl;
 
 import example.dto.SongRequestDTO;
 import example.enums.StorageType;
 import example.exceptions.ResourceException;
-import example.messaging.kafka.producers.ResourceResultProducer;
-import example.messaging.kafka.services.MessagingService;
+import example.messaging.common.producers.ResourceResultProducer;
+import example.messaging.common.services.MessagingService;
 import example.models.FileMetadataModel;
 import example.services.MediaMetadataService;
 import example.services.ResourceIntegrationService;

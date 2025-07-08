@@ -9,9 +9,9 @@ services:
       - ./init-scripts/resource-db:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
-    depends_on:
-      autoheal:
-        condition: service_started
+    #depends_on:
+    #  autoheal:
+    #    condition: service_started
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${RESOURCE_DB_USERNAME}" ]
       start_period: 10s
@@ -31,9 +31,9 @@ services:
       - ./init-scripts/song-db:/docker-entrypoint-initdb.d
     ports:
       - "5433:5432"
-    depends_on:
-      autoheal:
-        condition: service_started
+    #depends_on:
+    #  autoheal:
+    #    condition: service_started
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "${SONG_DB_USERNAME}" ]
       start_period: 10s
@@ -53,9 +53,9 @@ services:
       - ./init-scripts/storage-db:/docker-entrypoint-initdb.d
     ports:
       - "5434:5432"
-    depends_on:
-      autoheal:
-        condition: service_started
+    #depends_on:
+    #  autoheal:
+    #    condition: service_started
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${STORAGE_DB_USERNAME}" ]
       start_period: 10s
@@ -70,14 +70,10 @@ services:
       context: ./resource-service
       dockerfile: Dockerfile
     environment:
-      SPRING_DATASOURCE_URL: ${RESOURCE_DB_URL}
-      SPRING_DATASOURCE_USERNAME: ${RESOURCE_DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${RESOURCE_DB_PASSWORD}
+      #SPRING_DATASOURCE_URL: ${RESOURCE_DB_URL}
+      #SPRING_DATASOURCE_USERNAME: ${RESOURCE_DB_USERNAME}
+      #SPRING_DATASOURCE_PASSWORD: ${RESOURCE_DB_PASSWORD}
       EUREKA_REGISTRATION_URL: ${EUREKA_REGISTRATION_URL}
-      RESOURCE_S3_URL: ${RESOURCE_S3_URL}
-      RESOURCE_S3_REGION: ${RESOURCE_S3_REGION}
-      RESOURCE_S3_ACCESS_KEY_ID: ${RESOURCE_S3_ACCESS_KEY_ID}
-      RESOURCE_S3_SECRET_ACCESS_KEY: ${RESOURCE_S3_SECRET_ACCESS_KEY}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
       RESOURCE_PROCESSOR_TOPIC_NAME: ${RESOURCE_PROCESSOR_TOPIC_NAME}
       RESOURCE_REPLICATION_FACTOR: ${KAFKA_REPLICATION_FACTOR:-1}
@@ -91,6 +87,23 @@ services:
       APPLICATION_NAME: ${RESOURCE_SERVICE_NAME}
       LOKI_LOG_TEMPLATE: ${LOKI_LOG_TEMPLATE}
       EUREKA_PROMETHEUS_SCAPE_ENABLED: ${EUREKA_PROMETHEUS_SCAPE_ENABLED}
+      USE_MESSAGE_BROKER: ${USE_MESSAGE_BROKER}
+      USE_STORAGE_SERVICE: ${USE_STORAGE_SERVICE}
+      AWS_S3_RESOURCE_BUCKET_URL: ${RESOURCE_S3_URL}
+      AWS_S3_REGION: ${AWS_STATIC_REGION}
+      AWS_S3_ACCESS_KEY_ID: ${AWS_RESOURCE_SERVICE_ACCESS_KEY}
+      AWS_S3_SECRET_ACCESS_KEY: ${AWS_RESOURCE_SERVICE_ACCESS_SECRET}
+      AWS_SQS_ACCESS_KEY: ${AWS_RESOURCE_SERVICE_ACCESS_KEY}
+      AWS_SQS_ACCESS_SECRET: ${AWS_RESOURCE_SERVICE_ACCESS_SECRET}
+      AWS_SQS_REGION: ${AWS_STATIC_REGION}
+      AWS_SQS_RESOURCE_QUEUE: ${AWS_RESOURCE_QUEUE}
+      AWS_SQS_RESOURCE_QUEUE_DLQ: ${AWS_RESOURCE_QUEUE_DLQ}
+      AWS_SQS_RESOURCE_RESULT_QUEUE_DLQ: ${AWS_RESOURCE_RESULT_QUEUE_DLQ}
+      AWS_SQS_RESOURCE_RESULT_QUEUE: ${AWS_RESOURCE_RESULT_QUEUE}
+      AWS_SECRETS_MANAGER_REGION: ${AWS_STATIC_REGION}
+      AWS_SECRETS_MANAGER_ACCESS_KEY: ${AWS_RESOURCE_SERVICE_ACCESS_KEY}
+      AWS_SECRETS_MANAGER_SECRET: ${AWS_RESOURCE_SERVICE_ACCESS_SECRET}
+      AWS_SECRETS_RESOURCE_DB_ARN: ${AWS_SECRET_RESOURCE_DB_ARN}
     ports:
       - "8081:8081"
     depends_on:
@@ -157,6 +170,14 @@ services:
       APPLICATION_NAME: ${RESOURCE_PROCESSOR_NAME}
       LOKI_LOG_TEMPLATE: ${LOKI_LOG_TEMPLATE}
       EUREKA_PROMETHEUS_SCAPE_ENABLED: ${EUREKA_PROMETHEUS_SCAPE_ENABLED}
+      USE_MESSAGE_BROKER: ${USE_MESSAGE_BROKER}
+      AWS_SQS_ACCESS_KEY: ${AWS_RESOURCE_PROCESSOR_ACCESS_KEY}
+      AWS_SQS_ACCESS_SECRET: ${AWS_RESOURCE_PROCESSOR_ACCESS_SECRET}
+      AWS_SQS_REGION: ${AWS_STATIC_REGION}
+      AWS_SQS_RESOURCE_QUEUE: ${AWS_RESOURCE_QUEUE}
+      AWS_SQS_RESOURCE_QUEUE_DLQ: ${AWS_RESOURCE_QUEUE_DLQ}
+      AWS_SQS_RESOURCE_RESULT_QUEUE_DLQ: ${AWS_RESOURCE_RESULT_QUEUE_DLQ}
+      AWS_SQS_RESOURCE_RESULT_QUEUE: ${AWS_RESOURCE_RESULT_QUEUE}
     ports:
       - "8083:8083"
     depends_on:
@@ -215,8 +236,8 @@ services:
     ports:
       - "8761:8761"
     depends_on:
-      autoheal:
-        condition: service_started
+    #  autoheal:
+    #    condition: service_started
       grafana:
         condition: service_started
     healthcheck:
@@ -294,9 +315,9 @@ services:
       - HOSTNAME_EXTERNAL=localstack
     volumes:
       - ./init-scripts/localstack/localstack-ready.sh:/etc/localstack/init/ready.d/localstack-ready.sh
-    depends_on:
-      autoheal:
-        condition: service_started
+    #depends_on:
+    #  autoheal:
+    #    condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "curl -sf localhost:4566/_localstack/init/ready | grep -q '\"completed\": true,'"]
       start_period: 15s
@@ -318,9 +339,9 @@ services:
       retries: 10
     ports:
       - "2181:2181"
-    depends_on:
-      autoheal:
-        condition: service_started
+    #depends_on:
+    #  autoheal:
+    #    condition: service_started
     labels:
       autoheal-feature: true
 
@@ -411,17 +432,17 @@ services:
     ports:
       - "3100:3100"
 
-  autoheal:
-    image: willfarrell/autoheal:latest
-    tty: true
-    restart: always
-    environment:
-      AUTOHEAL_INTERVAL: 60
-      AUTOHEAL_START_PERIOD: 100
-      AUTOHEAL_DEFAULT_STOP_TIMEOUT: 10
-      AUTOHEAL_CONTAINER_LABEL: autoheal-feature
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+  #autoheal:
+  #  image: willfarrell/autoheal:latest
+  #  tty: true
+  #  restart: always
+  #  environment:
+  #    AUTOHEAL_INTERVAL: 60
+  #    AUTOHEAL_START_PERIOD: 100
+  #    AUTOHEAL_DEFAULT_STOP_TIMEOUT: 10
+  #    AUTOHEAL_CONTAINER_LABEL: autoheal-feature
+  #  volumes:
+  #    - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   prom_data:

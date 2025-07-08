@@ -8,7 +8,7 @@ import example.dto.integration.StorageResponseDTO;
 import example.entities.ResourceEntity;
 import example.enums.StorageType;
 import example.exceptions.InvalidArgumentException;
-import example.messaging.kafka.producers.ResourceProducer;
+import example.messaging.common.producers.ResourceProducer;
 import example.repositories.ResourceRepository;
 import example.services.*;
 import jakarta.annotation.Resource;

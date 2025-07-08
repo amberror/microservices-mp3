@@ -1,4 +1,4 @@
-package example.messaging.kafka.services;
+package example.messaging.common.services;
 
 public interface MessagingService {
 	void processResourceResult(Long id);

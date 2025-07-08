@@ -10,6 +10,7 @@ import org.apache.kafka.common.serialization.LongSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.config.TopicBuilder;
@@ -29,6 +30,7 @@ public class KafkaConfig {
 	private String bootstrapServers;
 
 	@Bean
+	@Lazy
 	public ConsumerFactory<Long, Long> resourceConsumerFactory(
 			@Value("${kafka.resource.consumer.group.id}") String consumerGroupId,
 			@Value("${kafka.bootstrap.servers}") String bootstrapServers,
@@ -45,6 +47,7 @@ public class KafkaConfig {
 	}
 
 	@Bean
+	@Lazy
 	public ConcurrentKafkaListenerContainerFactory<Long, Long> resourceKafkaListenerContainerFactory(ConsumerFactory<Long, Long> resourceConsumerFactory) {
 		return new ConcurrentKafkaListenerContainerFactory<>() {{
 			setConsumerFactory(resourceConsumerFactory);
@@ -55,6 +58,7 @@ public class KafkaConfig {
 
 
 	@Bean
+	@Lazy
 	public ProducerFactory<Long, Long> resourceResultProducerFactory(
 			@Value("${kafka.producer.resource-result.acks}") String acks,
 			@Value("${kafka.producer.resource-result.reties}") String reties,
@@ -77,6 +81,7 @@ public class KafkaConfig {
 	}
 
 	@Bean
+	@Lazy
 	public KafkaTemplate<Long, Long> resourceResultKafkaTemplate(ProducerFactory<Long, Long> resourceResultProducerFactory) {
 		KafkaTemplate<Long, Long> template = new KafkaTemplate<>(resourceResultProducerFactory);
 		template.setObservationEnabled(Boolean.TRUE);
@@ -84,6 +89,7 @@ public class KafkaConfig {
 	}
 
 	@Bean
+	@Lazy
 	public KafkaAdmin admin() {
 		Map<String, Object> configs = new HashMap<>();
 		configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -91,8 +97,9 @@ public class KafkaConfig {
 	}
 
 	@Bean
+	@Lazy
 	public NewTopic resourceProcessorTopic(
-			@Value("${kafka.producer.resource-result.topic.name}") String resourceTopicName,
+			@Value("${kafka.producer.resource.result.topic.name}") String resourceTopicName,
 			@Value("${kafka.resource-result.replication.factor}") Integer replicas,
 			@Value("${kafka.resource-result.partition.count}") Integer partitions
 	) {
