@@ -9,9 +9,9 @@ services:
       - ./init-scripts/resource-db:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
-    #depends_on:
-    #  autoheal:
-    #    condition: service_started
+    depends_on:
+      autoheal:
+        condition: service_started
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${RESOURCE_DB_USERNAME}" ]
       start_period: 10s
@@ -31,9 +31,9 @@ services:
       - ./init-scripts/song-db:/docker-entrypoint-initdb.d
     ports:
       - "5433:5432"
-    #depends_on:
-    #  autoheal:
-    #    condition: service_started
+    depends_on:
+      autoheal:
+        condition: service_started
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "${SONG_DB_USERNAME}" ]
       start_period: 10s
@@ -53,9 +53,9 @@ services:
       - ./init-scripts/storage-db:/docker-entrypoint-initdb.d
     ports:
       - "5434:5432"
-    #depends_on:
-    #  autoheal:
-    #    condition: service_started
+    depends_on:
+      autoheal:
+        condition: service_started
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${STORAGE_DB_USERNAME}" ]
       start_period: 10s
@@ -236,8 +236,8 @@ services:
     ports:
       - "8761:8761"
     depends_on:
-    #  autoheal:
-    #    condition: service_started
+      autoheal:
+        condition: service_started
       grafana:
         condition: service_started
     healthcheck:
@@ -315,9 +315,9 @@ services:
       - HOSTNAME_EXTERNAL=localstack
     volumes:
       - ./init-scripts/localstack/localstack-ready.sh:/etc/localstack/init/ready.d/localstack-ready.sh
-    #depends_on:
-    #  autoheal:
-    #    condition: service_started
+    depends_on:
+      autoheal:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "curl -sf localhost:4566/_localstack/init/ready | grep -q '\"completed\": true,'"]
       start_period: 15s
@@ -339,9 +339,9 @@ services:
       retries: 10
     ports:
       - "2181:2181"
-    #depends_on:
-    #  autoheal:
-    #    condition: service_started
+    depends_on:
+      autoheal:
+        condition: service_started
     labels:
       autoheal-feature: true
 
@@ -432,17 +432,17 @@ services:
     ports:
       - "3100:3100"
 
-  #autoheal:
-  #  image: willfarrell/autoheal:latest
-  #  tty: true
-  #  restart: always
-  #  environment:
-  #    AUTOHEAL_INTERVAL: 60
-  #    AUTOHEAL_START_PERIOD: 100
-  #    AUTOHEAL_DEFAULT_STOP_TIMEOUT: 10
-  #    AUTOHEAL_CONTAINER_LABEL: autoheal-feature
-  #  volumes:
-  #    - /var/run/docker.sock:/var/run/docker.sock
+  autoheal:
+    image: willfarrell/autoheal:latest
+    tty: true
+    restart: always
+    environment:
+      AUTOHEAL_INTERVAL: 60
+      AUTOHEAL_START_PERIOD: 100
+      AUTOHEAL_DEFAULT_STOP_TIMEOUT: 10
+      AUTOHEAL_CONTAINER_LABEL: autoheal-feature
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   prom_data:
